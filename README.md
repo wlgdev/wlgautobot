@@ -30,7 +30,7 @@ The bot also scrapes data from public sources and endpoints (no API key required
 - **VK**
 - **Rutube**
 - **Dzen**
-- **Bosty**
+- **Boosty**
 - **DuckDuckGo search**
 
 ## Usage
