@@ -101,7 +101,7 @@ This bot is intended to run on the free [Deno Deploy](https://dash.deno.com/) se
 - [Deno](https://deno.com/) 2.1 and above
 - A configured `.env` file with all necessary (development) variables
 
-### Running
+#### Running
 
 ```bash
 deno task start
