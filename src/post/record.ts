@@ -8,10 +8,11 @@ import {
   YoutubeVideoInfo,
 } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
-import { geminiThinking } from "../libs/gemini.ts";
+import { gemini, geminiThinking } from "../libs/gemini.ts";
 import { Context, InputFile } from "@grammyjs/grammy";
 
 import { MultiSelectMenu } from "../telegram/multi-select-menu.ts";
+import { llmFallback } from "../libs/llm-fallback.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -204,10 +205,18 @@ function getStreamPartsWithIds(
 async function generateDescription(timecodes: string): Promise<string> {
   const prompt = config.llm.stream_record_prompt(timecodes);
 
-  const answer = await geminiThinking(prompt, "gemini-2.5-flash-preview-04-17").catch((err) => {
+  const answer = await llmFallback(prompt, [
+    [geminiThinking, "gemini-2.5-flash-preview-04-17"],
+    [gemini, "gemini-2.0-flash"],
+  ]).catch((err) => {
     console.error(err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });
+
+  // const answer = await geminiThinking(prompt, "gemini-2.5-flash-preview-04-17").catch((err) => {
+  //   console.error(err);
+  //   throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
+  // });
 
   return answer.replaceAll("с зрителями", "со зрителями").replace("</result>", "").replace("<result>", "").trim();
 }

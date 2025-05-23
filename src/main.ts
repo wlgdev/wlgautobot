@@ -6,7 +6,7 @@ import { streamText } from "@hono/hono/streaming";
 import { scheduleStats } from "./features/shorts-stat.ts";
 import { twitchEventHandler } from "./twitch/event-handler.ts";
 import { bot } from "./telegram/bot.ts";
-import { getLastStreamTitle } from "./features/timecodes.ts";
+import { getLastStream, getLastStreamTitle } from "./features/timecodes.ts";
 
 Deno.cron("shorts stats", "0 0 26 * *", async () => {
   await scheduleStats();
@@ -53,7 +53,7 @@ if (!isDenoDeploy) {
     if (c.req.query("title") === "") {
       return c.text(await getLastStreamTitle());
     } else {
-      return c.status(400);
+      return c.json(await getLastStream());
     }
   });
 

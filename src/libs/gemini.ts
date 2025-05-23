@@ -1,6 +1,13 @@
 import { config } from "../config.ts";
 
-export async function gemini(prompt: string, model: string): Promise<string> {
+type GeminiModel =
+  | "gemini-2.0-flash-lite" // 1500 RPD
+  | "gemini-2.0-flash" // 1000 RPD
+  | "gemini-1.5-flash" // 1500 RPD
+  // deno-lint-ignore ban-types
+  | (string & {});
+
+export async function gemini(prompt: string, model: GeminiModel): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.llm.gemini.key}`,
     {

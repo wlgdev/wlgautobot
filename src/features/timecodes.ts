@@ -24,9 +24,11 @@ export async function sendTimecodesMessage(
       chatId,
       `📌 таймкоды для стрима от ${date ?? new Date().toLocaleDateString("ru-RU")}\n\n<pre><code class="language-log">${
         (date ?? new Date().toLocaleDateString("ru-RU")).replaceAll(".", "/")
-      } – ${printCategories(history)}</code></pre>\n\n<pre><code class="language-log">${
-        printTimecodes(history)
-      }</code></pre>`,
+      } – ${
+        printCategories(history).map((item) => item.toLocaleUpperCase()).join(", ")
+      }</code></pre>\n\n<pre><code class="language-log">${
+        printCategories(history).join("\n")
+      }</code></pre>\n\n<pre><code class="language-log">${printTimecodes(history)}</code></pre>`,
       { parse_mode: "HTML" },
     );
   })).catch((error) => {
@@ -43,15 +45,14 @@ function printTimecodes(history: StreamHistoryEntry[]): string {
   return out.join("\n");
 }
 
-function printCategories(history: StreamHistoryEntry[]): string {
+function printCategories(history: StreamHistoryEntry[]): string[] {
   const unique = new Set(
     history
       .map((item) => item.category)
-      .filter((item) => !["Just Chatting", "Special Events", "Games+Demos", "No Category", ""].includes(item))
-      .map((item) => item.toLocaleUpperCase()),
+      .filter((item) => !["Just Chatting", "Special Events", "Games+Demos", "No Category", ""].includes(item)),
   );
 
-  return Array.from(unique).join(", ");
+  return Array.from(unique);
 }
 
 export async function getLastStreamTitle(): Promise<string> {
@@ -59,4 +60,15 @@ export async function getLastStreamTitle(): Promise<string> {
   return `${(new Date(state.stream.start_time).toLocaleDateString("ru-RU")).replaceAll(".", "/")} – ${
     printCategories(state.stream.history)
   }`;
+}
+
+export async function getLastStream(): Promise<{
+  online: boolean;
+  title: string | null;
+  category: string | null;
+  start_time: number;
+  history: StreamHistoryEntry[];
+}> {
+  await using state = await getState();
+  return state.stream;
 }
