@@ -33,7 +33,7 @@ export async function gemini(prompt: string, model: GeminiModel): Promise<string
   return data.candidates.at(0)?.content.parts.at(0)?.text;
 }
 
-type ThinkingModel = string | "gemini-2.5-flash-preview-04-17"; // 500 RPD
+type ThinkingModel = string | "gemini-2.5-flash-preview-04-17" | "gemini-2.5-flash-preview-05-20"; // 500 RPD
 
 export async function geminiThinking(prompt: string, model: ThinkingModel, thinking_budget = 0): Promise<string> {
   const res = await fetch(

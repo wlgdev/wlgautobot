@@ -7,9 +7,20 @@ import { scheduleStats } from "./features/shorts-stat.ts";
 import { twitchEventHandler } from "./twitch/event-handler.ts";
 import { bot } from "./telegram/bot.ts";
 import { getLastStream, getLastStreamTitle } from "./features/timecodes.ts";
+import { fillBoostyUrls, fillYoutubeUrls } from "./features/record-url-to-google-sheets.ts";
 
 Deno.cron("shorts stats", "0 0 26 * *", async () => {
   await scheduleStats();
+});
+
+Deno.cron("fill youtube record urls", "0 3 * * *", async () => {
+  console.log("fill youtube record urls");
+  await fillYoutubeUrls();
+});
+
+Deno.cron("fill boosty record urls", "30 3 * * *", async () => {
+  console.log("fill boosty record urls");
+  await fillBoostyUrls();
 });
 
 if (!isDenoDeploy) {

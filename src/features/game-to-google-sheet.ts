@@ -103,6 +103,9 @@ async function insertFirstRowRaw(date: string, game: string, url?: string) {
                     userEnteredFormat: { borders: GREY_BORDERS },
                   },
                   {
+                    userEnteredFormat: { borders: GREY_BORDERS },
+                  },
+                  {
                     userEnteredFormat: {
                       borders: {
                         ...GREY_BORDERS,
@@ -123,7 +126,7 @@ async function insertFirstRowRaw(date: string, game: string, url?: string) {
               startRowIndex: 1,
               endRowIndex: 2,
               startColumnIndex: 0,
-              endColumnIndex: 5,
+              endColumnIndex: 6,
             },
           },
         },

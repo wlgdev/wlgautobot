@@ -151,10 +151,14 @@ ${timecode}
       key: atob(Deno.env.get("GOOGLE_SHEETS_KEY")!),
       spreadsheet_id: Deno.env.get("GOOGLE_SPREADSHEET_ID")!,
       sheet_id: +Deno.env.get("GOOGLE_SHEET_ID")! || 0,
+      sheet_name: Deno.env.get("GOOGLE_SHEET_NAME")! || "'Игры на стриме'",
     },
     short_stats: {
       spreadsheet_id: Deno.env.get("SHORT_STATS_SPREADSHEET_ID")!,
       sheet_id: +Deno.env.get("SHORT_STATS_SHEET_ID")! || 0,
+    },
+    proxy: {
+      cloudflare: Deno.env.get("PROXY_CLOUDFLARE")!,
     },
   };
 }

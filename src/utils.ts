@@ -44,6 +44,11 @@ export function duration(length: number): string {
   }`;
 }
 
+export function seconds(duration: string): number {
+  const [hours, minutes, seconds] = duration.split(":").map(Number);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
 export function fetchRetry(
   input: RequestInfo | URL,
   init?: RequestInit,

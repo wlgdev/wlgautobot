@@ -206,7 +206,7 @@ async function generateDescription(timecodes: string): Promise<string> {
   const prompt = config.llm.stream_record_prompt(timecodes);
 
   const answer = await llmFallback(prompt, [
-    [geminiThinking, "gemini-2.5-flash-preview-04-17"],
+    [geminiThinking, "gemini-2.5-flash-preview-05-20"],
     [gemini, "gemini-2.0-flash"],
   ]).catch((err) => {
     console.error(err);
@@ -249,7 +249,7 @@ async function getTwitchVods(search?: string): Promise<TwitchVodInfo[]> {
 
 async function getBoostyPost(search?: string): Promise<BoostyBlogPost[]> {
   // TODO: remove if it will be possibleto fetch direct
-  const boosty = new Boosty(config.boosty.channel, "https://boostyflare.mahahuha5816.workers.dev/forward?url=");
+  const boosty = new Boosty(config.boosty.channel, config.proxy.cloudflare);
   const posts = await boosty.getBlog().catch((err) => {
     console.error(err);
     return [];

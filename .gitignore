@@ -1,3 +1,5 @@
 .env
 .vscode
 kv.db
+
+src/run.ts

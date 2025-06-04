@@ -7,6 +7,7 @@ import { youtubeVideoCut } from "../post/video-cut.ts";
 import { streamTimecodes } from "../features/timecodes.ts";
 import { shortsStats } from "../features/shorts-stat.ts";
 import { boostyBosts } from "../features/boosty-posts.ts";
+import { fillBoostyUrls, fillYoutubeUrls } from "../features/record-url-to-google-sheets.ts";
 
 export const bot = new Bot(config.telegram.token);
 const admin_filter = (ctx: Context) => ctx.hasChatType("private") && config.admins.includes(ctx.from?.id ?? 0);
@@ -45,6 +46,16 @@ bot.filter(admin_filter).hears(/^(\/shorts|шортсы|shorts)\s*(.+){0,1}/, as
 bot.filter(admin_filter).hears(/^(\/boosty|бусти|boosty)\s*(.+){0,1}/, async (ctx) => {
   console.log(ctx.from?.id, ctx.message?.text);
   await boostyBosts(ctx);
+});
+
+bot.filter(admin_filter).hears(/^(ссылкиб)/, async (ctx) => {
+  console.log(ctx.from?.id, ctx.message?.text);
+  await fillBoostyUrls();
+});
+
+bot.filter(admin_filter).hears(/^(ссылкию)/, async (ctx) => {
+  console.log(ctx.from?.id, ctx.message?.text);
+  await fillYoutubeUrls();
 });
 
 bot.catch((err) => {

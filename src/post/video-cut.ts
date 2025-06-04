@@ -110,8 +110,8 @@ async function getVideoInfoById(id: string): Promise<YoutubeIdDetails> {
 }
 
 async function getVkVideos(search?: string): Promise<VkVideoInfo[]> {
-  const vk = new Vk(config.vk.channel);
-  const videos = await vk.getSection("uploaded").catch((err) => {
+  const vk = new Vk(config.vk.channel, config.proxy.cloudflare);
+  const videos = await vk.getVideos().catch((err) => {
     console.error(err);
     throw new Error("не удалось получить список видео vk");
   });
@@ -123,7 +123,7 @@ async function getVkVideos(search?: string): Promise<VkVideoInfo[]> {
 }
 
 async function getRutubeVideos(search?: string): Promise<RutubeVideoInfo[]> {
-  const rutube = new Rutube(config.rutube.channel);
+  const rutube = new Rutube(config.rutube.channel, undefined, config.proxy.cloudflare);
   const videos = await rutube.getVideos().catch((err) => {
     console.error(err);
     throw new Error(err);
@@ -152,7 +152,7 @@ async function getDzenVideos(search?: string): Promise<DzenVideoInfo[]> {
 async function generatePostText(title: string, desc: string): Promise<string> {
   const prompt = config.llm.video_cut_prompt(title, desc);
 
-  const answer = await geminiThinking(prompt, "gemini-2.5-flash-preview-04-17").catch((err) => {
+  const answer = await geminiThinking(prompt, "gemini-2.5-flash-preview-05-20").catch((err) => {
     console.error(err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });

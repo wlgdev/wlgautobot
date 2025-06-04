@@ -2,12 +2,12 @@
   "lock": false,
   "tasks": {
     "start": "deno run -A --env --unstable-cron --unstable-kv ./src/main.ts",
-    "dev": "deno run -A --watch --unstable --env ./run.ts"
+    "run": "deno run -A --env ./src/run.ts"
   },
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.6.18",
     "@shevernitskiy/proxify": "jsr:@shevernitskiy/proxify@^0.0.9",
-    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.49",
+    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.61",
     "@grammyjs/grammy": "https://deno.land/x/grammy@v1.36.0/mod.ts",
     "@std/async": "jsr:@std/async@^1.0.12",
     "google-auth-library": "npm:google-auth-library@^9.15.1"

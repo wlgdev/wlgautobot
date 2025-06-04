@@ -1,0 +1,157 @@
+// deno-lint-ignore-file no-explicit-any
+import { Boosty, Youtube } from "@shevernitskiy/scraperator";
+import { config } from "../config.ts";
+import { getCellsRange, updateCellValue, updateUrlCellRequest } from "../libs/google-sheets.ts";
+import { seconds } from "../utils.ts";
+
+const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
+
+async function getYoutubeVideosDateToIdMap(): Promise<Map<string, string>> {
+  const yt = new Youtube(config.youtube.channel_vod);
+  const videos = await yt.getVideos();
+  const date_to_url_map = new Map<string, string>();
+  for (const video of videos.items) {
+    const date_of_stream = video.title.match(REGEX_DATE)?.[0];
+    if (date_of_stream) {
+      date_to_url_map.set(date_of_stream, video.id);
+    }
+  }
+
+  return date_to_url_map;
+}
+
+async function getBoostyPostDateToUrlMap(): Promise<Map<string, string>> {
+  const boosty = new Boosty(config.boosty.channel, config.proxy.cloudflare);
+  const posts = await boosty.getBlog(50);
+  const date_to_url_map = new Map<string, string>();
+  for (const post of posts) {
+    const date_of_stream = post.title.match(REGEX_DATE)?.[0];
+    if (date_of_stream) {
+      date_to_url_map.set(date_of_stream, post.url);
+    }
+  }
+
+  return date_to_url_map;
+}
+
+function prepareCurrentData(rows: any[]): Record<any, {
+  row_index: number;
+  date: any;
+  game: any;
+  youtube: any;
+  boosty: any;
+}[]> {
+  const refine = rows.map((row, index) => ({
+    row_index: index + 1,
+    date: row[0].replaceAll(".", "/"),
+    game: row[1],
+    youtube: row.at(4),
+    boosty: row.at(5),
+  }));
+  // @ts-ignore it's ok
+  return Object.groupBy(refine, (row) => row.date);
+}
+
+async function getYoutubeVideoStats(ids: string[]): Promise<any[]> {
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/videos?key=${config.youtube.apikey}&part=snippet&id=${ids.join(",")}`,
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch data from Youtube API ${res.body ? await res.text() : ""}`,
+    );
+  }
+
+  const data = await res.json();
+
+  return data.items.map((item: any) => {
+    return {
+      id: item.id,
+      title: item.snippet.title,
+      channel_id: item.snippet.channelId,
+      channel_title: item.snippet.channelTitle,
+      description: item.snippet.description,
+      category_id: item.snippet.categoryId,
+      thumbnail: item.snippet.thumbnails.maxres.url,
+      tags: item.snippet.tags,
+    };
+  });
+}
+
+function proccessYoutubeVideos(videos: any[]): Map<string, string> {
+  const out = new Map<string, string>();
+
+  for (const video of videos) {
+    const date_of_stream = video.title.match(REGEX_DATE)?.[0];
+    if (!date_of_stream) continue;
+    for (const timecode of video.description.matchAll(/(\d+:\d+:\d+) – (.+)/g)) {
+      const sec = seconds(timecode[1]);
+      if (!sec || isNaN(sec) || sec < 0) continue;
+      out.set(`${date_of_stream} ${timecode[2].toLowerCase()}`, `https://youtu.be/${video.id}?t=${sec}s`);
+    }
+  }
+  return out;
+}
+
+function prepareUpdateRequests(
+  dategame_to_youtube_url: Map<string, string>,
+  current_data: Record<string, {
+    row_index: number;
+    date: any;
+    game: any;
+    youtube: any;
+    boosty: any;
+  }[]>,
+): any[] {
+  const out = [];
+  for (const date of Object.values(current_data)) {
+    for (const row of date) {
+      const url = dategame_to_youtube_url.get(`${row.date} ${row.game.toLowerCase()}`);
+      if (!url) continue;
+      out.push(updateUrlCellRequest(row.row_index + 1, row.row_index + 1, 5, "YouTube", url));
+    }
+  }
+  return out;
+}
+
+export async function fillYoutubeUrls(): Promise<void> {
+  const last_50_rows = await getCellsRange(
+    config.google_sheets.spreadsheet_id,
+    `${config.google_sheets.sheet_name}!A2:F50`,
+  );
+  const current_data = prepareCurrentData(last_50_rows);
+  const missed_youtube_dates = new Set(
+    Object.values(current_data).flat().filter((item) => item && !item.youtube).map((item) => item && item.date),
+  );
+  const date_to_youtube_id = await getYoutubeVideosDateToIdMap();
+  const youtube_ids_to_get_info = Array.from(
+    missed_youtube_dates.values().map((item) => date_to_youtube_id.get(item)),
+  ).filter((item) => item && item !== undefined) as string[];
+  const youtube_videos_info = await getYoutubeVideoStats(youtube_ids_to_get_info);
+  const youtube_timecodes_urls = proccessYoutubeVideos(youtube_videos_info);
+  const youtube_requests = prepareUpdateRequests(youtube_timecodes_urls, current_data);
+  if (youtube_requests.length > 0) {
+    await updateCellValue(config.google_sheets.spreadsheet_id, youtube_requests);
+  }
+}
+
+export async function fillBoostyUrls(): Promise<void> {
+  const last_50_rows = await getCellsRange(
+    config.google_sheets.spreadsheet_id,
+    `${config.google_sheets.sheet_name}!A2:F50`,
+  );
+  const current_data = prepareCurrentData(last_50_rows);
+  const date_to_boosty_url = await getBoostyPostDateToUrlMap();
+  const requests = [];
+  for (const row of Object.values(current_data).flat().filter((item) => item && !item.boosty)) {
+    const url = date_to_boosty_url.get(row.date);
+    if (url) {
+      const request = updateUrlCellRequest(row.row_index + 1, row.row_index + 1, 6, "Boosty", url, true);
+      requests.push(request);
+    }
+  }
+  if (requests.length > 0) {
+    await updateCellValue(config.google_sheets.spreadsheet_id, requests);
+  }
+}
