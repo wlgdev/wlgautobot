@@ -1,16 +1,44 @@
 // deno-lint-ignore-file no-explicit-any
-import { Boosty, Youtube } from "@shevernitskiy/scraperator";
+import { Boosty } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { getCellsRange, updateCellValue, updateUrlCellRequest } from "../libs/google-sheets.ts";
 import { seconds } from "../utils.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
-async function getYoutubeVideosDateToIdMap(): Promise<Map<string, string>> {
-  const yt = new Youtube(config.youtube.channel_vod);
-  const videos = await yt.getVideos();
+type YoutubeVideo = {
+  id: string;
+  title: string;
+  description: string;
+  channel_id: string;
+  channel_title: string;
+  published_at: number;
+  thumbnail: string;
+};
+
+async function getYoutubeVideos(): Promise<YoutubeVideo[]> {
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/playlistItems?key=${config.youtube.apikey}&part=snippet,contentDetails&playlistId=${config.youtube.upload_vods_playlist_id}&maxResults=50&order=date`,
+  );
+
+  const data = await res.json();
+
+  return data.items.map((item: any) => {
+    return {
+      id: item.contentDetails.videoId,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      channel_id: item.snippet.channelId,
+      channel_title: item.snippet.channelTitle,
+      published_at: new Date(item.snippet.publishedAt).getTime(),
+      thumbnail: item.snippet.thumbnails.maxres.url,
+    } satisfies YoutubeVideo;
+  });
+}
+
+function dateToYoutubeVideoId(videos: YoutubeVideo[]): Map<string, string> {
   const date_to_url_map = new Map<string, string>();
-  for (const video of videos.items) {
+  for (const video of videos) {
     const date_of_stream = video.title.match(REGEX_DATE)?.[0];
     if (date_of_stream) {
       date_to_url_map.set(date_of_stream, video.id);
@@ -50,33 +78,6 @@ function prepareCurrentData(rows: any[]): Record<any, {
   }));
   // @ts-ignore it's ok
   return Object.groupBy(refine, (row) => row.date);
-}
-
-async function getYoutubeVideoStats(ids: string[]): Promise<any[]> {
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?key=${config.youtube.apikey}&part=snippet&id=${ids.join(",")}`,
-  );
-
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch data from Youtube API ${res.body ? await res.text() : ""}`,
-    );
-  }
-
-  const data = await res.json();
-
-  return data.items.map((item: any) => {
-    return {
-      id: item.id,
-      title: item.snippet.title,
-      channel_id: item.snippet.channelId,
-      channel_title: item.snippet.channelTitle,
-      description: item.snippet.description,
-      category_id: item.snippet.categoryId,
-      thumbnail: item.snippet.thumbnails.maxres.url,
-      tags: item.snippet.tags,
-    };
-  });
 }
 
 function proccessYoutubeVideos(videos: any[]): Map<string, string> {
@@ -124,12 +125,15 @@ export async function fillYoutubeUrls(): Promise<void> {
   const missed_youtube_dates = new Set(
     Object.values(current_data).flat().filter((item) => item && !item.youtube).map((item) => item && item.date),
   );
-  const date_to_youtube_id = await getYoutubeVideosDateToIdMap();
+  const youtube_videos = await getYoutubeVideos();
+  const date_to_youtube_id = dateToYoutubeVideoId(youtube_videos);
   const youtube_ids_to_get_info = Array.from(
     missed_youtube_dates.values().map((item) => date_to_youtube_id.get(item)),
   ).filter((item) => item && item !== undefined) as string[];
-  const youtube_videos_info = await getYoutubeVideoStats(youtube_ids_to_get_info);
-  const youtube_timecodes_urls = proccessYoutubeVideos(youtube_videos_info);
+
+  const youtube_timecodes_urls = proccessYoutubeVideos(
+    youtube_videos.filter((item) => youtube_ids_to_get_info.includes(item.id)),
+  );
   const youtube_requests = prepareUpdateRequests(youtube_timecodes_urls, current_data);
   if (youtube_requests.length > 0) {
     await updateCellValue(config.google_sheets.spreadsheet_id, youtube_requests);

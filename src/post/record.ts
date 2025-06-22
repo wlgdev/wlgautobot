@@ -1,12 +1,4 @@
-import {
-  Boosty,
-  BoostyBlogPost,
-  Twitch,
-  TwitchVodInfo,
-  Youtube,
-  YoutubeIdDetails,
-  YoutubeVideoInfo,
-} from "@shevernitskiy/scraperator";
+import { Boosty, BoostyBlogPost, Twitch, TwitchVodInfo, Youtube, YoutubeIdDetails } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { gemini, geminiThinking } from "../libs/gemini.ts";
 import { Context, InputFile } from "@grammyjs/grammy";
@@ -15,6 +7,16 @@ import { MultiSelectMenu } from "../telegram/multi-select-menu.ts";
 import { llmFallback } from "../libs/llm-fallback.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
+
+type YoutubeVideo = {
+  id: string;
+  title: string;
+  description: string;
+  channel_id: string;
+  channel_title: string;
+  published_at: number;
+  thumbnail: string;
+};
 
 export const vods_menu = new MultiSelectMenu({
   id: "vods",
@@ -213,27 +215,37 @@ async function generateDescription(timecodes: string): Promise<string> {
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });
 
-  // const answer = await geminiThinking(prompt, "gemini-2.5-flash-preview-04-17").catch((err) => {
-  //   console.error(err);
-  //   throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
-  // });
-
   return answer.replaceAll("с зрителями", "со зрителями").replace("</result>", "").replace("<result>", "").trim();
 }
 
-async function getYoutubeVideos(search?: string): Promise<YoutubeVideoInfo[]> {
-  const yt = new Youtube(config.youtube.channel_vod);
-  const videos = await yt.getVideos();
-  if (videos.items.length === 0) {
+async function getYoutubeVideos(search?: string): Promise<YoutubeVideo[]> {
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/playlistItems?key=${config.youtube.apikey}&part=snippet,contentDetails&playlistId=${config.youtube.upload_vods_playlist_id}&maxResults=50&order=date`,
+  );
+
+  const data = await res.json();
+  const videos: YoutubeVideo[] = data.items.map((item: any) => {
+    return {
+      id: item.contentDetails.videoId,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      channel_id: item.snippet.channelId,
+      channel_title: item.snippet.channelTitle,
+      published_at: new Date(item.snippet.publishedAt).getTime(),
+      thumbnail: item.snippet.thumbnails.maxres.url,
+    };
+  });
+
+  if (videos.length === 0) {
     throw new Error("не удалось получить список видео");
   }
   if (!search) {
-    const date_of_stream = videos.items[0].title.match(REGEX_DATE)?.[0];
+    const date_of_stream = videos[0].title.match(REGEX_DATE)?.[0];
     if (date_of_stream) {
       search = date_of_stream;
     }
   }
-  const result = search ? videos.items.filter((item) => item.title.includes(search)) : [videos.items[0]];
+  const result = search ? videos.filter((item) => item.title.includes(search)) : [videos[0]];
   if (result.length === 0) {
     throw new Error(`не удалось получить список видео по запросу ${search}`);
   }

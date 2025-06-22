@@ -3,6 +3,7 @@ import { proxify } from "@shevernitskiy/proxify";
 export type StreamHistoryEntry = {
   title: string;
   category: string;
+  category_id: string;
   changed_title: boolean;
   changed_category: boolean;
   offset: number;
@@ -13,6 +14,7 @@ export const default_state = {
     online: false,
     title: null as string | null,
     category: null as string | null,
+    category_id: null as string | null,
     start_time: 0,
     history: [] as StreamHistoryEntry[],
   },

@@ -24,10 +24,12 @@ export async function streamStart(): Promise<void> {
     online: true,
     title: info.title,
     category: info.category,
+    category_id: info.category_id,
     start_time: info.start_time,
     history: [{
       title: info.title,
       category: info.category,
+      category_id: info.category_id,
       changed_title: true,
       changed_category: true,
       offset: 0,

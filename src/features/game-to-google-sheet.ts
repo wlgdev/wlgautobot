@@ -1,6 +1,7 @@
 import { JWT } from "google-auth-library";
 import { searchDDG } from "../libs/ddg-search.ts";
 import { config } from "../config.ts";
+import { IGDB, Steam, Twitch } from "@shevernitskiy/scraperator";
 
 const BYPASS = ["Just Chatting", "Special Events", "Games+Demos", "No Category"];
 
@@ -19,7 +20,7 @@ const GREY_BORDERS = {
 export async function addGameToGoogleSheet(game: string) {
   if (BYPASS.includes(game)) return;
 
-  const game_url = await getGameSteamUrl(game).catch((error) => {
+  const game_url = await getGameSteamUrl2(game).catch((error) => {
     console.error("Cannot get game url", error);
     return undefined;
   });
@@ -38,6 +39,7 @@ async function getMetaOGUrl(url: string): Promise<string> {
   return match?.[1] ?? url;
 }
 
+//TODO: deprecated
 async function getGameSteamUrl(category: string): Promise<string | undefined> {
   const data = await searchDDG(`steam ${category}`);
   if (data.length === 0) return;
@@ -54,6 +56,35 @@ async function getGameSteamUrl(category: string): Promise<string | undefined> {
     return true_url;
   } else {
     return sanitized_url;
+  }
+}
+
+export async function getGameSteamUrl2(category: string): Promise<string | undefined> {
+  try {
+    const tw = new Twitch("Juice");
+    const stream_info = await tw.streamInfo();
+    if (!stream_info) return;
+    const category_info = await tw.categoryInfoBySlug(stream_info.category_slug);
+    if (!category_info || !category_info.igdbURL) return;
+    const igdb_slug = category_info.igdbURL.split("/").at(-1);
+    if (!igdb_slug) return;
+    const igdb_game = await IGDB.getGameMore(igdb_slug);
+    if (!igdb_game) return;
+    if (igdb_game) {
+      const item = igdb_game.links.find((item) => item.url.match(/https:\/\/store\.steampowered\.com\/app\/(\d+).*/));
+      if (item) return item.url;
+    }
+
+    const steam = new Steam();
+    const steam_game = await steam.search(category);
+    if (
+      steam_game && steam_game.length > 0 && (steam_game[0].levenshtein <= 3 || steam_game[0].levenshtein_lower === 0)
+    ) {
+      return steam_game[0].url;
+    }
+  } catch (error) {
+    console.error("Cannot get steam url", error);
+    return;
   }
 }
 

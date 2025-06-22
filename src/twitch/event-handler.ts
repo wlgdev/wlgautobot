@@ -19,8 +19,8 @@ export async function twitchEventHandler(event: any): Promise<void> {
 }
 
 async function handleChannelUpdate({ event }: any): Promise<void> {
-  console.log("Twitch Stream update", event.title, event.category_name);
-  await streamUpdate(event.title, event.category_name);
+  console.log("Twitch Stream update", event.title, event.category_name, event.category_id);
+  await streamUpdate(event.title, event.category_name, event.category_id);
 }
 async function handleStreamOnline({ event }: any): Promise<void> {
   console.log("Twitch Stream online", event.broadcaster_user_id, event.login);
