@@ -1,78 +1,150 @@
-# WLGAUTOBOT
+<!--suppress HtmlUnknownAnchorTarget, HtmlDeprecatedAttribute -->
+<div id="top"></div>
 
-This is a Telegram bot that offers various helpful features for smooth content delivery in WLG productions:
+<div align="center">
+  <a href="https://github.com/wlgdev/wlgautobot/actions/workflows/secrets-update.yml">
+    <img src="https://github.com/wlgdev/wlgautobot/actions/workflows/secrets-update.yml/badge.svg" alt="status"/>
+  </a>
+</div>
+<h1 align="center">
+  WLGAUTOBOT
+</h1>
 
-- Generate Telegram posts for stream recordings
-- Generate Telegram posts for video cuts
-- Generate Telegram posts for clips/shorts/TikToks
+<p align="center">
+   Telegram bot for automating content delivery and statistics for WLG productions.
+</p>
+
+<div align="center">
+  📦 :octocat:
+</div>
+<div align="center">
+  <img src="./docs/description.webp" alt="description"/>
+</div>
+
+<!-- TABLE OF CONTENT -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#-description">📃 Description</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#-getting-started">🪧 Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#%EF%B8%8F-how-to-use">⚠️ How to use</a>
+      <ul>
+        <li><a href="#possible-exceptions">Possible Exceptions</a></li>
+      </ul>
+    </li>
+    <li><a href="#%EF%B8%8F-deployment">⬆️ Deployment</a></li>
+    <li><a href="#-reference">🔗 Reference</a></li>
+  </ol>
+</details>
+
+<br>
+
+## 📃 Description
+
+WLGAUTOBOT is a Telegram bot designed to automate and simplify content delivery for WLG productions. It integrates with multiple APIs and services to generate posts, track streams, gather statistics, and trigger remote utilities.
+
+### Features
+
+- Generate Telegram posts for stream recordings, video cuts, and clips/shorts/TikToks
 - Track stream status and gather timecodes
-- Gather info and stream URL and log it to a specific Google Sheet
+- Log stream info and URLs to Google Sheets
 - Compile monthly statistics for clips/shorts/TikToks
-- Trigger the remote [WLGDL](https://github.com/wlgdev/wlgdl) utility to start recording
+- Trigger remote [WLGDL](https://github.com/wlgdev/wlgdl) utility for recording
 
-## How it Works
+### Built With
 
-There is no magic behind this bot. It simply integrates multiple APIs and services:
+* [Deno 2.1+](https://deno.com/)
+* [Telegram Bot API](https://core.telegram.org/api)
+* [Google APIs (Sheets, Gemini)](https://developers.google.com/)
+* [YouTube Data v3](https://developers.google.com/youtube/v3)
+* [Twitch API](https://dev.twitch.tv/docs/api)
+* [RapidAPI TikTok Scraper](https://rapidapi.com/tikwm-tikwm-default/api/tiktok-scraper7)
 
-## APIs and Services
+<p align="right">(<a href="#top">back to top</a>)</p>
 
-This bot utilizes several APIs and services. Note that obtaining API keys is required for most of them:
+## 🪧 Getting Started
 
-- **YouTube Data v3** – Official Google API (https://developers.google.com/youtube/v3), used to gather shorts info
-- **Google Sheets** – Official Google API (https://developers.google.com/workspace/sheets), used to write game info and clips/shorts/TikToks stats to Google Sheets
-- **Telegram** – Official Telegram Bot API (https://core.telegram.org/api), the main interface for the bot
-- **Google AI** – Official Google AI API (https://ai.google.dev/gemini-api/docs), used to generate Telegram posts for video cuts and recordings
-- **Rapid API TikTok Scraper API** – Unofficial TikTok API (https://rapidapi.com/tikwm-tikwm-default/api/tiktok-scraper7), used to gather TikTok info
-- **Twitch** – Official Twitch API (https://dev.twitch.tv/docs/api), used to receive stream info
+Follow these instructions to set up and run the bot.
 
-The bot also scrapes data from public sources and endpoints (no API key required) for:
+### Prerequisites
 
-- **VK**
-- **Rutube**
-- **Dzen**
-- **Boosty**
-- **DuckDuckGo search**
+- [Deno](https://deno.com/) 2.1 or above
+- Telegram bot token
+- API keys for YouTube, Google Sheets, Gemini, TikTok (RapidAPI), Twitch, etc.
+- Service account for Google Sheets
+- `.env` file with all required variables
 
-## Usage
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/wlgdev/wlgautobot.git
+   cd wlgautobot
+   ```
+2. Configure your `.env` file with all necessary variables (see [ENV section](#env)).
+3. Install dependencies and format code:
+   ```bash
+   deno task fmt
+   ```
+4. Start the bot locally:
+   ```bash
+   deno task start
+   ```
+   > When running locally, the bot uses polling for Telegram updates. HTTP server/webhooks are not started.
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+## ⚠️ How to use
 
 ### Telegram User Commands
 
 - **ping | /ping** – Pong
-- **клип | /clip** _[search]_ – Generates a Telegram post with the latest clip/short/TikTok
-- **запись | /record** _[search]_ – Generates a Telegram post with the latest stream recording
-- **нарезка | /cut** _[search]_ – Generates a Telegram post with the latest video cut
-- **таймкоды | /timecodes** – Shows timecodes for the latest stream
-- **шортсы | /short** – Gathers info about the last ~30 clips/shorts/TikToks and provides it in a CSV file
+- **клип | /clip** _[search]_ – Generate post with latest clip/short/TikTok
+- **запись | /record** _[search]_ – Generate post with latest stream recording
+- **нарезка | /cut** _[search]_ – Generate post with latest video cut
+- **таймкоды | /timecodes** – Show timecodes for latest stream
+- **шортсы | /short** – Gather info about last ~30 clips/shorts/TikToks as CSV
 
-> [!NOTE]
-> The parameter `search` is optional and can be used to specify content. For example, using it with the `/record` command will generate a Telegram post for the content that includes the search term in its title.
+> The `search` parameter is optional and filters content by title.
 
 ### ENV
 
 | Name                       | Description                                                                        | Example                                                           |
 | -------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | TELEGRAM_TOKEN             | Telegram bot token                                                                 | `1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz` |
-| VK_CHANNEL                 | VK group name (from which to get videos/clips info)                                | `welovegames`                                                     |
-| VK_GROUP                   | VK group ID (from which to get videos/clips info; include the minus sign)          | `-46211765`                                                       |
+| VK_CHANNEL                 | VK group name (for videos/clips info)                                              | `welovegames`                                                     |
+| VK_GROUP                   | VK group ID (include minus sign)                                                   | `-46211765`                                                       |
 | RUTUBE_CHANNEL             | Rutube channel name                                                                | `welovegames`                                                     |
 | DZEN_CHANNEL               | Dzen channel name                                                                  | `welovegames`                                                     |
 | BOSTY_CHANNEL              | Bosty channel name                                                                 | `welovegames`                                                     |
 | TWITCH_CHANNEL             | Twitch channel name                                                                | `welovegames`                                                     |
 | YOUTUBE_CHANNEL            | YouTube channel name (main)                                                        | `@WELOVEGAMES`                                                    |
-| YOUTUBE_VODS_CHANNEL       | YouTube channel name (for VODs)                                                    | `@wlgvods`                                                        |
+| YOUTUBE_VODS_CHANNEL       | YouTube channel name (VODs)                                                        | `@wlgvods`                                                        |
 | YOUTUBE_APIKEY             | YouTube Data v3 API key                                                            | `AIzaSyD4o1234mFGHIJKLMNOPQRSTUVWXYZ`                             |
 | TIKTOK_CHANNEL             | TikTok channel name                                                                | `welovegames`                                                     |
-| TIKTOK_KEY                 | TikTok API key (for RapidAPI TikTok Scraper API)                                   | `HIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`                   |
-| GOOGLE_SHEETS_EMAIL        | Google Sheets Service Account (for Google Sheets API)                              | `wlgautobot@wlg-autobot.iam.gserviceaccount.com`                  |
-| GOOGLE_SHEETS_KEY          | Google Sheets Service Account Key (for Google Sheets API) **IN BASE64**            | `ewufgUIAGDFUEIAgfweiufweeofiwefuguigwef`                         |
-| GOOGLE_SPREADSHEET_ID      | Google Sheets Spreadsheet ID where game info is written                            | `1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`  |
-| GOOGLE_SHEET_ID            | Google Sheets Sheet ID where game info is written                                  | `0`                                                               |
-| SHORT_STATS_SPREADSHEET_ID | Google Sheets Spreadsheet ID where shorts stats are written                        | `1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`  |
-| SHORT_STATS_SHEET_ID       | Google Sheets Sheet ID where shorts stats are written                              | `0`                                                               |
+| TIKTOK_KEY                 | TikTok API key (RapidAPI)                                                          | `HIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`                   |
+| GOOGLE_SHEETS_EMAIL        | Google Sheets Service Account email                                                | `wlgautobot@wlg-autobot.iam.gserviceaccount.com`                  |
+| GOOGLE_SHEETS_KEY          | Google Sheets Service Account Key (BASE64)                                         | `ewufgUIAGDFUEIAgfweiufweeofiwefuguigwef`                         |
+| GOOGLE_SPREADSHEET_ID      | Google Sheets Spreadsheet ID (game info)                                           | `1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`  |
+| GOOGLE_SHEET_ID            | Google Sheets Sheet ID (game info)                                                 | `0`                                                               |
+| SHORT_STATS_SPREADSHEET_ID | Google Sheets Spreadsheet ID (shorts stats)                                        | `1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`  |
+| SHORT_STATS_SHEET_ID       | Google Sheets Sheet ID (shorts stats)                                              | `0`                                                               |
 | GEMINI_KEY                 | Google Gemini API key                                                              | `fwefwefwUGWDfwudgw`                                              |
-| ADMIN                      | Telegram user IDs with rights to use this bot (comma separated)                    | `1234567890,1234567890`                                           |
-| SUBSCRIPTION_TIMECODES     | Telegram user IDs to send stream timecodes after the stream ends (comma separated) | `1234567890,1234567890`                                           |
-| WLGDL                      | HTTP URL to trigger the WLGDL utility (optional)                                   | `https://wlgdl.com/`                                              |
+| ADMIN                      | Telegram user IDs with admin rights (comma separated)                              | `1234567890,1234567890`                                           |
+| SUBSCRIPTION_TIMECODES     | Telegram user IDs to send timecodes after stream (comma separated)                 | `1234567890,1234567890`                                           |
+| WLGDL                      | HTTP URL to trigger WLGDL utility (optional)                                       | `https://wlgdl.com/`                                              |
 
 ### App HTTP Endpoints
 
@@ -83,35 +155,37 @@ The bot also scrapes data from public sources and endpoints (no API key required
 | POST /twitch   | For Twitch EventSub webhooks           |
 | GET /stream    | Returns info about the previous stream |
 
-### Installation
+### Possible Exceptions
 
-This bot is intended to run on the free [Deno Deploy](https://dash.deno.com/) serverless platform, though it can also be deployed on other platforms (such as Cloudflare Workers with minor adjustments) or on your own server. For these docs, we focus on Deno Deploy.
+- Missing or invalid API keys
+- Incorrect ENV configuration
+- Telegram API errors
+- Google Sheets permission errors
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+## ⬆️ Deployment
+
+This bot is intended for [Deno Deploy](https://dash.deno.com/), but can be adapted for other platforms (e.g., Cloudflare Workers).
 
 1. Register your project on Deno Deploy.
-2. Create a bot account on Telegram and set up the webhook to `https://<your-project-name>.deno.dev/telegram` to receive Telegram updates.
-3. Create an app in the Twitch Developer Console. Subscribe to `channel.update`, `stream.online`, and `stream.offline` events, and set up the webhook to `https://<your-project-name>.deno.dev/twitch` to receive Twitch updates.
-4. Create all necessary service accounts and obtain the required keys as described above.
-5. Set up ENV variables in Deno Deploy.
-6. Upload the project via the [deployctl](https://docs.deno.com/deploy/manual/deployctl/) utility.
+2. Create a Telegram bot and set webhook to `https://<your-project>.deno.dev/telegram`.
+3. Register a Twitch app, subscribe to events, and set webhook to `https://<your-project>.deno.dev/twitch`.
+4. Set up all required service accounts and keys.
+5. Configure ENV variables in Deno Deploy.
+6. Deploy using [deployctl](https://docs.deno.com/deploy/manual/deployctl/).
 
-### Development
+<p align="right">(<a href="#top">back to top</a>)</p>
 
-#### Prerequisites
+## 🔗 Reference
 
-- [Deno](https://deno.com/) 2.1 and above
-- A configured `.env` file with all necessary (development) variables
-
-#### Running
-
-```bash
-deno task start
-```
-
-When you start the bot locally, it will use the polling method for Telegram updates. The HTTP server will not start; therefore, while Telegram will be accessible, webhooks will not function.
-
-## Contributing
-
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change. For formatting, please use `deno fmt`.
+- [Deno Deploy Docs](https://deno.com/deploy/docs)
+- [Telegram Bot API](https://core.telegram.org/api)
+- [Google Sheets API](https://developers.google.com/sheets/api)
+- [YouTube Data API](https://developers.google.com/youtube/v3)
+- [Twitch API](https://dev.twitch.tv/docs/api)
+- [RapidAPI TikTok Scraper](https://rapidapi.com/tikwm-tikwm-default/api/tiktok-scraper7)
+- [WLGDL Utility](https://github.com/wlgdev/wlgdl)
 
 ## License
 
