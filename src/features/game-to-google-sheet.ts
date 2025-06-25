@@ -2,6 +2,7 @@ import { JWT } from "google-auth-library";
 import { searchDDG } from "../libs/ddg-search.ts";
 import { config } from "../config.ts";
 import { IGDB, Steam, Twitch } from "@shevernitskiy/scraperator";
+import { GoogleSearch } from "../libs/google-search.ts";
 
 const BYPASS = ["Just Chatting", "Special Events", "Games+Demos", "No Category"];
 
@@ -20,10 +21,16 @@ const GREY_BORDERS = {
 export async function addGameToGoogleSheet(game: string) {
   if (BYPASS.includes(game)) return;
 
-  const game_url = await getGameSteamUrl2(game).catch((error) => {
-    console.error("Cannot get game url", error);
+  let game_url = await getGameSteamUrl3(`steam ${game}`, /store\.steampowered\.com\/app\/(\d+)/).catch((error) => {
+    console.error("Cannot get steam game url", error);
     return undefined;
   });
+  if (!game_url) {
+    game_url = await getGameSteamUrl3(`википедия ${game}`, /(ru|en)\.wikipedia\.org\/wiki\/(\w+)/).catch((error) => {
+      console.error("Cannot get wiki game url", error);
+      return undefined;
+    });
+  }
   const d = new Date();
   const today = `${d.getDate().toString().padStart(2, "0")}.${
     (d.getMonth() + 1).toString().padStart(2, "0")
@@ -59,24 +66,39 @@ async function getGameSteamUrl(category: string): Promise<string | undefined> {
   }
 }
 
-export async function getGameSteamUrl2(category: string): Promise<string | undefined> {
-  try {
-    const tw = new Twitch("Juice");
-    const stream_info = await tw.streamInfo();
-    if (!stream_info) return;
-    const category_info = await tw.categoryInfoBySlug(stream_info.category_slug);
-    if (!category_info || !category_info.igdbURL) return;
-    const igdb_slug = category_info.igdbURL.split("/").at(-1);
-    if (!igdb_slug) return;
-    const igdb_game = await IGDB.getGameMore(igdb_slug);
-    if (!igdb_game) return;
-    if (igdb_game) {
-      const item = igdb_game.links.find((item) => item.url.match(/https:\/\/store\.steampowered\.com\/app\/(\d+).*/));
-      if (item) return item.url;
+async function getGameSteamUrl3(query: string, test: RegExp): Promise<string | undefined> {
+  const data = await GoogleSearch.search(query);
+  if (data.length === 0) return;
+
+  for (let i = 0; i < 2; i++) {
+    if (data[i].url.match(test)) {
+      return data[i].url;
     }
+  }
+}
+
+//TODO: deprecated
+async function getGameSteamUrl2(category: string): Promise<string | undefined> {
+  try {
+    // const tw = new Twitch(config.twitch.channel);
+    // const stream_info = await tw.streamInfo();
+    // console.log(stream_info);
+    // if (!stream_info) return "1";
+    // const category_info = await tw.categoryInfoBySlug(stream_info.category_slug);
+    // if (!category_info || !category_info.igdbURL) return "2";
+    // const igdb_slug = category_info.igdbURL.split("/").at(-1);
+    // if (!igdb_slug) return "3";
+    // const igdb_game = await IGDB.getGameMore(igdb_slug).catch((error) => {
+    //   console.error("IGDB error", error);
+    // });
+    // if (igdb_game) {
+    //   const item = igdb_game.links.find((item) => item.url.match(/https:\/\/store\.steampowered\.com\/app\/(\d+).*/));
+    //   if (item) return item.url;
+    // }
 
     const steam = new Steam();
     const steam_game = await steam.search(category);
+    console.log(steam_game);
     if (
       steam_game && steam_game.length > 0 && (steam_game[0].levenshtein <= 3 || steam_game[0].levenshtein_lower === 0)
     ) {

@@ -10,7 +10,7 @@
     "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.63",
     "@grammyjs/grammy": "https://deno.land/x/grammy@v1.36.0/mod.ts",
     "@std/async": "jsr:@std/async@^1.0.12",
-    "google-auth-library": "npm:google-auth-library@^10.1.0"
+    "google-auth-library": "npm:google-auth-library@^9.15.1"
   },
   "fmt": {
     "lineWidth": 120

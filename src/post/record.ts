@@ -224,6 +224,7 @@ async function getYoutubeVideos(search?: string): Promise<YoutubeVideo[]> {
   );
 
   const data = await res.json();
+  // deno-lint-ignore no-explicit-any
   const videos: YoutubeVideo[] = data.items.map((item: any) => {
     return {
       id: item.contentDetails.videoId,

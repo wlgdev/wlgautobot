@@ -14,12 +14,6 @@ export async function streamStart(): Promise<void> {
 
   info.title = info.title.split("|")[0].replaceAll(/![а-яА-ЯёЁ\w\d]+/gu, "").trim();
 
-  if (state.stream.category !== info.category) {
-    await addGameToGoogleSheet(info.category).catch((error) => {
-      console.error("Google Sheets: failed add game", error);
-    });
-  }
-
   state.stream = {
     online: true,
     title: info.title,
@@ -35,4 +29,8 @@ export async function streamStart(): Promise<void> {
       offset: 0,
     }],
   };
+
+  await addGameToGoogleSheet(info.category).catch((error) => {
+    console.error("Google Sheets: failed add game", error);
+  });
 }
