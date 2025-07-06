@@ -30,7 +30,9 @@ export async function streamStart(): Promise<void> {
     }],
   };
 
-  await addGameToGoogleSheet(info.category).catch((error) => {
-    console.error("Google Sheets: failed add game", error);
-  });
+  if (info.category && info.category.length > 2) {
+    await addGameToGoogleSheet(info.category).catch((error) => {
+      console.error("Google Sheets: failed add game", error);
+    });
+  }
 }

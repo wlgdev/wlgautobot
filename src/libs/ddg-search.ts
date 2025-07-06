@@ -1,3 +1,5 @@
+// TODO: deprecate
+
 type SearchResult = {
   title: string;
   description: string;

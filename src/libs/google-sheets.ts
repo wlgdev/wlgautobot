@@ -8,6 +8,12 @@ const client = new JWT({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
+const BLACK_BORDER = {
+  style: "SOLID",
+  width: 1,
+  color: { red: 0.4, green: 0.4, blue: 0.4 },
+};
+
 const GREY_BORDER = {
   style: "SOLID",
   width: 1,
@@ -17,16 +23,6 @@ const GREY_BORDERS = {
   top: GREY_BORDER,
   bottom: GREY_BORDER,
   right: GREY_BORDER,
-  left: GREY_BORDER,
-};
-const GREY_BORDERS_RIGHT_BLACK = {
-  top: GREY_BORDER,
-  bottom: GREY_BORDER,
-  right: {
-    style: "SOLID",
-    width: 1,
-    color: { red: 0, green: 0, blue: 0 },
-  },
   left: GREY_BORDER,
 };
 
@@ -73,20 +69,35 @@ export function updateUrlCellRequest(
   label: string,
   url: string,
   right_border = false,
+  bottom_border = false,
 ) {
   start_row--;
 
+  const fields = ["userEnteredValue"];
   const cell_value = {
-    values: [{
-      userEnteredValue: { formulaValue: `=HYPERLINK("${url}"; "${label}")` },
-      userEnteredFormat: { borders: right_border ? GREY_BORDERS_RIGHT_BLACK : GREY_BORDERS },
-    }],
+    userEnteredValue: { formulaValue: `=HYPERLINK("${url}", "${label}")` },
   };
+
+  if (bottom_border || right_border) {
+    const borders = { ...GREY_BORDERS };
+    if (bottom_border) {
+      borders.bottom = BLACK_BORDER;
+    }
+    if (right_border) {
+      borders.right = BLACK_BORDER;
+    }
+
+    // @ts-expect-error - TODO: fix this
+    cell_value.userEnteredFormat = { borders };
+    fields.push("userEnteredFormat.borders");
+  }
+
+  const rows_payload = { values: [cell_value] };
 
   return {
     updateCells: {
-      rows: Array(end_row - start_row).fill(cell_value),
-      fields: "userEnteredValue,userEnteredFormat.borders",
+      rows: Array(end_row - start_row).fill(rows_payload),
+      fields: fields.join(","),
       range: {
         sheetId: 0,
         startRowIndex: start_row,

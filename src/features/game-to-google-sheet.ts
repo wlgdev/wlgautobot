@@ -1,10 +1,8 @@
 import { JWT } from "google-auth-library";
-import { searchDDG } from "../libs/ddg-search.ts";
 import { config } from "../config.ts";
-import { IGDB, Steam, Twitch } from "@shevernitskiy/scraperator";
-import { GoogleSearch } from "../libs/google-search.ts";
+import { GoogleSearch } from "@shevernitskiy/scraperator";
 
-const BYPASS = ["Just Chatting", "Special Events", "Games+Demos", "No Category"];
+const BYPASS = ["Just Chatting", "Special Events", "Games+Demos", "No Category", "I'm Only Sleeping"];
 
 const GREY_BORDER = {
   style: "SOLID",
@@ -21,12 +19,12 @@ const GREY_BORDERS = {
 export async function addGameToGoogleSheet(game: string) {
   if (BYPASS.includes(game)) return;
 
-  let game_url = await getGameSteamUrl3(`steam ${game}`, /store\.steampowered\.com\/app\/(\d+)/).catch((error) => {
+  let game_url = await getGameSteamUrl(`steam ${game}`, /store\.steampowered\.com\/app\/(\d+)/).catch((error) => {
     console.error("Cannot get steam game url", error);
     return undefined;
   });
   if (!game_url) {
-    game_url = await getGameSteamUrl3(`википедия ${game}`, /(ru|en)\.wikipedia\.org\/wiki\/(\w+)/).catch((error) => {
+    game_url = await getGameSteamUrl(`википедия ${game}`, /(ru|en)\.wikipedia\.org\/wiki\/(\w+)/).catch((error) => {
       console.error("Cannot get wiki game url", error);
       return undefined;
     });
@@ -39,34 +37,7 @@ export async function addGameToGoogleSheet(game: string) {
   await insertFirstRowRaw(today, game, game_url);
 }
 
-async function getMetaOGUrl(url: string): Promise<string> {
-  const res = await fetch(url, { redirect: "follow" });
-  const text = await res.text();
-  const match = text.match(/<meta property="og:url" content="([^"]+)">/);
-  return match?.[1] ?? url;
-}
-
-//TODO: deprecated
-async function getGameSteamUrl(category: string): Promise<string | undefined> {
-  const data = await searchDDG(`steam ${category}`);
-  if (data.length === 0) return;
-  const sanitized_url = data[0].url
-    .replaceAll("agecheck/", "")
-    .replace("steamcommunity.com", "store.steampowered.com")
-    .split("?")[0];
-  const split = sanitized_url.split("/");
-  if (
-    ((split.length === 6 && split[5] === "") || split.length === 5) &&
-    split[3] === "app" && sanitized_url.includes("store.steampowered.com")
-  ) {
-    const true_url = await getMetaOGUrl(sanitized_url);
-    return true_url;
-  } else {
-    return sanitized_url;
-  }
-}
-
-async function getGameSteamUrl3(query: string, test: RegExp): Promise<string | undefined> {
+async function getGameSteamUrl(query: string, test: RegExp): Promise<string | undefined> {
   const data = await GoogleSearch.search(query);
   if (data.length === 0) return;
 
@@ -74,39 +45,6 @@ async function getGameSteamUrl3(query: string, test: RegExp): Promise<string | u
     if (data[i].url.match(test)) {
       return data[i].url;
     }
-  }
-}
-
-//TODO: deprecated
-async function getGameSteamUrl2(category: string): Promise<string | undefined> {
-  try {
-    // const tw = new Twitch(config.twitch.channel);
-    // const stream_info = await tw.streamInfo();
-    // console.log(stream_info);
-    // if (!stream_info) return "1";
-    // const category_info = await tw.categoryInfoBySlug(stream_info.category_slug);
-    // if (!category_info || !category_info.igdbURL) return "2";
-    // const igdb_slug = category_info.igdbURL.split("/").at(-1);
-    // if (!igdb_slug) return "3";
-    // const igdb_game = await IGDB.getGameMore(igdb_slug).catch((error) => {
-    //   console.error("IGDB error", error);
-    // });
-    // if (igdb_game) {
-    //   const item = igdb_game.links.find((item) => item.url.match(/https:\/\/store\.steampowered\.com\/app\/(\d+).*/));
-    //   if (item) return item.url;
-    // }
-
-    const steam = new Steam();
-    const steam_game = await steam.search(category);
-    console.log(steam_game);
-    if (
-      steam_game && steam_game.length > 0 && (steam_game[0].levenshtein <= 3 || steam_game[0].levenshtein_lower === 0)
-    ) {
-      return steam_game[0].url;
-    }
-  } catch (error) {
-    console.error("Cannot get steam url", error);
-    return;
   }
 }
 

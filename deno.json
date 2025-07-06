@@ -7,7 +7,7 @@
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.6.18",
     "@shevernitskiy/proxify": "jsr:@shevernitskiy/proxify@^0.0.9",
-    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.63",
+    "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.64",
     "@grammyjs/grammy": "https://deno.land/x/grammy@v1.36.0/mod.ts",
     "@std/async": "jsr:@std/async@^1.0.12",
     "google-auth-library": "npm:google-auth-library@^9.15.1"

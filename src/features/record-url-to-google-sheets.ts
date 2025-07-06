@@ -16,6 +16,15 @@ type YoutubeVideo = {
   thumbnail: string;
 };
 
+type Row = {
+  row_index: number;
+  date: any;
+  game: any;
+  youtube: any;
+  boosty: any;
+  is_last_for_date: boolean;
+};
+
 async function getYoutubeVideos(): Promise<YoutubeVideo[]> {
   const res = await fetch(
     `https://www.googleapis.com/youtube/v3/playlistItems?key=${config.youtube.apikey}&part=snippet,contentDetails&playlistId=${config.youtube.upload_vods_playlist_id}&maxResults=50&order=date`,
@@ -36,15 +45,18 @@ async function getYoutubeVideos(): Promise<YoutubeVideo[]> {
   });
 }
 
-function dateToYoutubeVideoId(videos: YoutubeVideo[]): Map<string, string> {
-  const date_to_url_map = new Map<string, string>();
+// Now returns Map<string, string[]>
+function dateToYoutubeVideoId(videos: YoutubeVideo[]): Map<string, string[]> {
+  const date_to_url_map = new Map<string, string[]>();
   for (const video of videos) {
     const date_of_stream = video.title.match(REGEX_DATE)?.[0];
     if (date_of_stream) {
-      date_to_url_map.set(date_of_stream, video.id);
+      if (!date_to_url_map.has(date_of_stream)) {
+        date_to_url_map.set(date_of_stream, []);
+      }
+      date_to_url_map.get(date_of_stream)!.push(video.id);
     }
   }
-
   return date_to_url_map;
 }
 
@@ -62,25 +74,30 @@ async function getBoostyPostDateToUrlMap(): Promise<Map<string, string>> {
   return date_to_url_map;
 }
 
-function prepareCurrentData(rows: any[]): Record<any, {
-  row_index: number;
-  date: any;
-  game: any;
-  youtube: any;
-  boosty: any;
-}[]> {
+function prepareCurrentData(rows: any[]): Record<any, Row[]> {
   const refine = rows.map((row, index) => ({
     row_index: index + 1,
     date: row[0].replaceAll(".", "/"),
     game: row[1],
     youtube: row.at(4),
     boosty: row.at(5),
+    is_last_for_date: false,
   }));
+
   // @ts-ignore it's ok
-  return Object.groupBy(refine, (row) => row.date);
+  const grouped = Object.groupBy(refine, (row) => row.date);
+  for (const group in grouped) {
+    if (!grouped[group]) continue;
+    for (const [index, row] of grouped[group].entries()) {
+      row.is_last_for_date = index === grouped[group].length - 1;
+    }
+  }
+  // @ts-ignore it's ok
+  return grouped;
 }
 
-function proccessYoutubeVideos(videos: any[]): Map<string, string> {
+// Accepts an array of videos, returns Map<string, string>
+function proccessYoutubeVideos(videos: YoutubeVideo[]): Map<string, string> {
   const out = new Map<string, string>();
 
   for (const video of videos) {
@@ -89,7 +106,7 @@ function proccessYoutubeVideos(videos: any[]): Map<string, string> {
     for (const timecode of video.description.matchAll(/(\d+:\d+:\d+) – (.+)/g)) {
       const sec = seconds(timecode[1]);
       if (!sec || isNaN(sec) || sec < 0) continue;
-      out.set(`${date_of_stream} ${timecode[2].toLowerCase()}`, `https://youtu.be/${video.id}?t=${sec}s`);
+      out.set(`${date_of_stream} ${timecode[2].toLowerCase()?.trim()}`, `https://youtu.be/${video.id}?t=${sec}s`);
     }
   }
   return out;
@@ -97,20 +114,16 @@ function proccessYoutubeVideos(videos: any[]): Map<string, string> {
 
 function prepareUpdateRequests(
   dategame_to_youtube_url: Map<string, string>,
-  current_data: Record<string, {
-    row_index: number;
-    date: any;
-    game: any;
-    youtube: any;
-    boosty: any;
-  }[]>,
+  current_data: Record<string, Row[]>,
 ): any[] {
   const out = [];
   for (const date of Object.values(current_data)) {
     for (const row of date) {
-      const url = dategame_to_youtube_url.get(`${row.date} ${row.game.toLowerCase()}`);
-      if (!url) continue;
-      out.push(updateUrlCellRequest(row.row_index + 1, row.row_index + 1, 5, "YouTube", url));
+      const url = dategame_to_youtube_url.get(`${row.date} ${row.game?.toLowerCase()?.trim()}`);
+      if (!url || row.youtube?.trim().length > 0) continue;
+      out.push(
+        updateUrlCellRequest(row.row_index + 1, row.row_index + 1, 5, "YouTube", url, false, row.is_last_for_date),
+      );
     }
   }
   return out;
@@ -126,10 +139,12 @@ export async function fillYoutubeUrls(): Promise<void> {
     Object.values(current_data).flat().filter((item) => item && !item.youtube).map((item) => item && item.date),
   );
   const youtube_videos = await getYoutubeVideos();
-  const date_to_youtube_id = dateToYoutubeVideoId(youtube_videos);
-  const youtube_ids_to_get_info = Array.from(
-    missed_youtube_dates.values().map((item) => date_to_youtube_id.get(item)),
-  ).filter((item) => item && item !== undefined) as string[];
+  const date_to_youtube_ids = dateToYoutubeVideoId(youtube_videos);
+
+  const youtube_ids_to_get_info = Array.from(missed_youtube_dates)
+    .map((date) => date_to_youtube_ids.get(date))
+    .filter((ids): ids is string[] => !!ids && ids.length > 0)
+    .flat();
 
   const youtube_timecodes_urls = proccessYoutubeVideos(
     youtube_videos.filter((item) => youtube_ids_to_get_info.includes(item.id)),
@@ -151,7 +166,15 @@ export async function fillBoostyUrls(): Promise<void> {
   for (const row of Object.values(current_data).flat().filter((item) => item && !item.boosty)) {
     const url = date_to_boosty_url.get(row.date);
     if (url) {
-      const request = updateUrlCellRequest(row.row_index + 1, row.row_index + 1, 6, "Boosty", url, true);
+      const request = updateUrlCellRequest(
+        row.row_index + 1,
+        row.row_index + 1,
+        6,
+        "Boosty",
+        url,
+        true,
+        row.is_last_for_date,
+      );
       requests.push(request);
     }
   }
