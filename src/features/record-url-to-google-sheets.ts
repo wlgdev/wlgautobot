@@ -119,8 +119,17 @@ function prepareUpdateRequests(
   const out = [];
   for (const date of Object.values(current_data)) {
     for (const row of date) {
-      const url = dategame_to_youtube_url.get(`${row.date} ${row.game?.toLowerCase()?.trim()}`);
-      if (!url || row.youtube?.trim().length > 0) continue;
+      if (row.youtube?.trim().length > 0) continue;
+      const sheetGameName = row.game?.toLowerCase()?.trim();
+      if (!sheetGameName) continue;
+      let url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName}`);
+      if (!url && sheetGameName.endsWith(" demo")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -5)}`);
+      }
+      if (!url && sheetGameName.endsWith(" playtest")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -9)}`);
+      }
+      if (!url) continue;
       out.push(
         updateUrlCellRequest(row.row_index + 1, row.row_index + 1, 5, "YouTube", url, false, row.is_last_for_date),
       );
