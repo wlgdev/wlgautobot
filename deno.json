@@ -2,7 +2,7 @@
   "lock": false,
   "tasks": {
     "start": "deno run -A --env --unstable-cron --unstable-kv ./src/main.ts",
-    "run": "deno run -A --env ./src/run.ts"
+    "run": "deno run -A --env --unstable-kv ./src/run.ts"
   },
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.6.18",

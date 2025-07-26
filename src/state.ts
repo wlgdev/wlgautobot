@@ -21,6 +21,9 @@ export const default_state = {
   stats: {
     last_title: "Самый невезучий персонаж в игре",
   },
+  google_sheets: {
+    last_date: "23.07.2025",
+  },
   [proxify.is_mutated]: true,
 };
 

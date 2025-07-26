@@ -2,6 +2,7 @@ import { Twitch } from "@shevernitskiy/scraperator";
 import { getState } from "../state.ts";
 import { config } from "../config.ts";
 import { addGameToGoogleSheet } from "../features/game-to-google-sheet.ts";
+import { NOT_GAME } from "./stream-update.ts";
 
 export async function streamStart(): Promise<void> {
   await using state = await getState();
@@ -30,8 +31,16 @@ export async function streamStart(): Promise<void> {
     }],
   };
 
-  if (info.category && info.category.length > 2) {
-    await addGameToGoogleSheet(info.category).catch((error) => {
+  if (info.category && info.category.length > 2 && !NOT_GAME.has(info.category)) {
+    const date = new Date().toLocaleDateString("ru-RU");
+    let first_game_in_day = false;
+
+    if (state.google_sheets.last_date !== date) {
+      state.google_sheets.last_date = date;
+      first_game_in_day = true;
+    }
+
+    await addGameToGoogleSheet(info.category, first_game_in_day).catch((error) => {
       console.error("Google Sheets: failed add game", error);
     });
   }

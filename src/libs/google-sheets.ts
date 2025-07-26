@@ -8,18 +8,19 @@ const client = new JWT({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
-const BLACK_BORDER = {
+export const BLACK_BORDER = {
   style: "SOLID",
   width: 1,
   color: { red: 0.4, green: 0.4, blue: 0.4 },
 };
 
-const GREY_BORDER = {
+export const GREY_BORDER = {
   style: "SOLID",
   width: 1,
   color: { red: 0.72, green: 0.72, blue: 0.72 },
 };
-const GREY_BORDERS = {
+
+export const GREY_BORDERS = {
   top: GREY_BORDER,
   bottom: GREY_BORDER,
   right: GREY_BORDER,

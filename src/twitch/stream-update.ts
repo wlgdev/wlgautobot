@@ -2,6 +2,7 @@ import { getState } from "../state.ts";
 import { addGameToGoogleSheet } from "../features/game-to-google-sheet.ts";
 
 let update_cycle = false;
+export const NOT_GAME = new Set(["Just Chatting", "Special Events", "Games+Demos", "No Category", "I'm Only Sleeping"]);
 
 export async function streamUpdate(title: string, category: string, category_id: string): Promise<void> {
   if (update_cycle) return;
@@ -25,9 +26,18 @@ export async function streamUpdate(title: string, category: string, category_id:
 
   if (
     state.stream.category !== category &&
-    state.stream.history.filter((entry) => entry.category === category).length === 1
+    state.stream.history.filter((entry) => entry.category === category).length === 1 &&
+    !NOT_GAME.has(category)
   ) {
-    await addGameToGoogleSheet(category).catch((error) => {
+    const date = new Date().toLocaleDateString("ru-RU");
+    let first_game_in_day = false;
+
+    if (state.google_sheets.last_date !== date) {
+      state.google_sheets.last_date = date;
+      first_game_in_day = true;
+    }
+
+    await addGameToGoogleSheet(category, first_game_in_day).catch((error) => {
       console.error("Google Sheets: failed add game", error);
     });
   }

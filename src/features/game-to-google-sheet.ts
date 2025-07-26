@@ -1,24 +1,8 @@
-import { JWT } from "google-auth-library";
 import { config } from "../config.ts";
 import { GoogleSearch } from "@shevernitskiy/scraperator";
+import { BLACK_BORDER, GREY_BORDERS, updateCellValue } from "../libs/google-sheets.ts";
 
-const BYPASS = ["Just Chatting", "Special Events", "Games+Demos", "No Category", "I'm Only Sleeping"];
-
-const GREY_BORDER = {
-  style: "SOLID",
-  width: 1,
-  color: { red: 0.72, green: 0.72, blue: 0.72 },
-};
-const GREY_BORDERS = {
-  top: GREY_BORDER,
-  bottom: GREY_BORDER,
-  right: GREY_BORDER,
-  left: GREY_BORDER,
-};
-
-export async function addGameToGoogleSheet(game: string) {
-  if (BYPASS.includes(game)) return;
-
+export async function addGameToGoogleSheet(game: string, first_game_in_day = false): Promise<void> {
   let game_url = await getGameSteamUrl(`steam ${game}`, /store\.steampowered\.com\/app\/(\d+)/).catch((error) => {
     console.error("Cannot get steam game url", error);
     return undefined;
@@ -34,7 +18,7 @@ export async function addGameToGoogleSheet(game: string) {
     (d.getMonth() + 1).toString().padStart(2, "0")
   }.${d.getFullYear()}`;
 
-  await insertFirstRowRaw(today, game, game_url);
+  await insertFirstRowRaw(today, game, game_url, first_game_in_day);
 }
 
 async function getGameSteamUrl(query: string, test: RegExp): Promise<string | undefined> {
@@ -48,86 +32,54 @@ async function getGameSteamUrl(query: string, test: RegExp): Promise<string | un
   }
 }
 
-async function insertFirstRowRaw(date: string, game: string, url?: string) {
-  const client = new JWT({
-    email: config.google_sheets.email,
-    key: config.google_sheets.key,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
+async function insertFirstRowRaw(date: string, game: string, url?: string, bottom_border = false) {
+  const borders = bottom_border ? { ...GREY_BORDERS, bottom: BLACK_BORDER } : GREY_BORDERS;
 
-  const res = await client.request({
-    url: `https://sheets.googleapis.com/v4/spreadsheets/${config.google_sheets.spreadsheet_id}:batchUpdate`,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      requests: [
-        {
-          insertDimension: {
-            inheritFromBefore: false,
-            range: {
-              sheetId: config.google_sheets.sheet_id,
-              dimension: "ROWS",
-              startIndex: 1,
-              endIndex: 2,
-            },
-          },
+  await updateCellValue(config.google_sheets.spreadsheet_id, [
+    {
+      insertDimension: {
+        inheritFromBefore: false,
+        range: {
+          sheetId: config.google_sheets.sheet_id,
+          dimension: "ROWS",
+          startIndex: 1,
+          endIndex: 2,
         },
-        {
-          updateCells: {
-            rows: [
+      },
+    },
+    {
+      updateCells: {
+        rows: [
+          {
+            values: [
               {
-                values: [
-                  {
-                    userEnteredValue: { stringValue: date },
-                    userEnteredFormat: { borders: GREY_BORDERS },
-                  },
-                  {
-                    userEnteredValue: url ? { formulaValue: `=HYPERLINK("${url}"; "${game}")` } : { stringValue: game },
-                    userEnteredFormat: { borders: GREY_BORDERS },
-                  },
-                  {
-                    userEnteredFormat: { borders: GREY_BORDERS },
-                  },
-                  {
-                    userEnteredFormat: { borders: GREY_BORDERS },
-                  },
-                  {
-                    userEnteredFormat: { borders: GREY_BORDERS },
-                  },
-                  {
-                    userEnteredFormat: {
-                      borders: {
-                        ...GREY_BORDERS,
-                        right: {
-                          style: "SOLID",
-                          width: 1,
-                          color: { red: 0, green: 0, blue: 0 },
-                        },
-                      },
-                    },
-                  },
-                ],
+                userEnteredValue: { stringValue: date },
+                userEnteredFormat: { borders },
+              },
+              {
+                userEnteredValue: url ? { formulaValue: `=HYPERLINK("${url}"; "${game}")` } : { stringValue: game },
+                userEnteredFormat: { borders },
+              },
+              { userEnteredFormat: { borders } },
+              { userEnteredFormat: { borders } },
+              { userEnteredFormat: { borders } },
+              {
+                userEnteredFormat: {
+                  borders: { ...borders, right: BLACK_BORDER },
+                },
               },
             ],
-            fields: "userEnteredValue,userEnteredFormat.borders",
-            range: {
-              sheetId: 0,
-              startRowIndex: 1,
-              endRowIndex: 2,
-              startColumnIndex: 0,
-              endColumnIndex: 6,
-            },
           },
+        ],
+        fields: "userEnteredValue,userEnteredFormat.borders",
+        range: {
+          sheetId: 0,
+          startRowIndex: 1,
+          endRowIndex: 2,
+          startColumnIndex: 0,
+          endColumnIndex: 6,
         },
-      ],
-    }),
-  });
-
-  if (res.status !== 200) {
-    console.error("Google Sheets Error inserting row -", res.status, res.data);
-  } else {
-    console.info("Google Sheets: inserted", date, game, url);
-  }
+      },
+    },
+  ]);
 }
