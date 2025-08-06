@@ -7,20 +7,36 @@ import { scheduleStats } from "./features/shorts-stat.ts";
 import { twitchEventHandler } from "./twitch/event-handler.ts";
 import { bot } from "./telegram/bot.ts";
 import { getLastStream, getLastStreamTitle } from "./features/timecodes.ts";
-import { fillBoostyUrls, fillYoutubeUrls } from "./features/record-url-to-google-sheets.ts";
+import { fillBoostyGames, fillYoutubeGames } from "./features/games-url-to-google-sheets.ts";
+import { fillBoostyRecords, fillTwitchRecords, fillYoutubeRecords } from "./features/records-url-to-goolge-sheets.ts";
 
 Deno.cron("shorts stats", "0 0 26 * *", async () => {
   await scheduleStats();
 });
 
-Deno.cron("fill youtube record urls", "0 3 * * *", async () => {
-  console.log("fill youtube record urls");
-  await fillYoutubeUrls();
+Deno.cron("fill youtube games urls", "0 7 * * *", async () => {
+  console.log("fill youtube games urls");
+  await fillYoutubeGames();
 });
 
-Deno.cron("fill boosty record urls", "30 3 * * *", async () => {
-  console.log("fill boosty record urls");
-  await fillBoostyUrls();
+Deno.cron("fill boosty games urls", "10 7 * * *", async () => {
+  console.log("fill boosty games urls");
+  await fillBoostyGames();
+});
+
+Deno.cron("fill twitch records urls", "20 7 * * *", async () => {
+  console.log("fill twitch records urls");
+  await fillTwitchRecords();
+});
+
+Deno.cron("fill youtube records urls", "30 7 * * *", async () => {
+  console.log("fill youtube records urls");
+  await fillYoutubeRecords();
+});
+
+Deno.cron("fill boosty records urls", "40 7 * * *", async () => {
+  console.log("fill youtube records urls");
+  await fillBoostyRecords();
 });
 
 if (!isDenoDeploy) {

@@ -151,8 +151,10 @@ ${timecode}
       email: Deno.env.get("GOOGLE_SHEETS_EMAIL"),
       key: atob(Deno.env.get("GOOGLE_SHEETS_KEY")!),
       spreadsheet_id: Deno.env.get("GOOGLE_SPREADSHEET_ID")!,
-      sheet_id: +Deno.env.get("GOOGLE_SHEET_ID")! || 0,
-      sheet_name: Deno.env.get("GOOGLE_SHEET_NAME")! || "'Игры на стриме'",
+      sheet_id_games: +Deno.env.get("GOOGLE_SHEET_ID_GAMES")! || 0,
+      sheet_id_records: +Deno.env.get("GOOGLE_SHEET_ID_RECORDS")! || 0,
+      sheet_name_games: Deno.env.get("GOOGLE_SHEET_NAME_GAMES")! || "'Игры на стриме'",
+      sheet_name_records: Deno.env.get("GOOGLE_SHEET_NAME_RECORDS")! || "'Записи стримов'",
     },
     short_stats: {
       spreadsheet_id: Deno.env.get("SHORT_STATS_SPREADSHEET_ID")!,

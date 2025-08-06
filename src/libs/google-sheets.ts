@@ -8,104 +8,190 @@ const client = new JWT({
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 
-export const BLACK_BORDER = {
-  style: "SOLID",
-  width: 1,
-  color: { red: 0.4, green: 0.4, blue: 0.4 },
-};
+type Fields = "userEnteredValue" | "textFormatRuns" | "userEnteredFormat.borders" | "userEnteredFormat";
 
-export const GREY_BORDER = {
-  style: "SOLID",
-  width: 1,
-  color: { red: 0.72, green: 0.72, blue: 0.72 },
-};
-
-export const GREY_BORDERS = {
-  top: GREY_BORDER,
-  bottom: GREY_BORDER,
-  right: GREY_BORDER,
-  left: GREY_BORDER,
-};
-
-export async function getCellsRange(spreadsheet_id: string, range: string): Promise<any[]> {
-  const res = await client.request<any>({
-    url: `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet_id}/values/${encodeURIComponent(range)}`,
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  }).catch((error) => {
-    console.error("Google Sheets Error getting cells range -", error);
-    return { data: { values: [] } };
-  });
-  return res.data.values;
-}
-
-export async function updateCellValue(
-  spreadsheet_id: string,
-  requests: any[],
-): Promise<void> {
-  const res = await client.request({
-    url: `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet_id}:batchUpdate`,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      requests: requests,
-    }),
-  });
-
-  if (res.status !== 200) {
-    console.error("Google Sheets Error inserting row -", res.status, res.data);
-  } else {
-    console.info("Google Sheets: inserted requests", requests.length);
-  }
-}
-
-export function updateUrlCellRequest(
-  start_row: number,
-  end_row: number,
-  column: number,
-  label: string,
-  url: string,
-  right_border = false,
-  bottom_border = false,
-) {
-  start_row--;
-
-  const fields = ["userEnteredValue"];
-  const cell_value = {
-    userEnteredValue: { formulaValue: `=HYPERLINK("${url}", "${label}")` },
+export class GoogleSheets {
+  static BLACK_BORDER = {
+    style: "SOLID",
+    width: 1,
+    color: { red: 0.4, green: 0.4, blue: 0.4 },
   };
 
-  if (bottom_border || right_border) {
-    const borders = { ...GREY_BORDERS };
-    if (bottom_border) {
-      borders.bottom = BLACK_BORDER;
-    }
-    if (right_border) {
-      borders.right = BLACK_BORDER;
-    }
+  static GREY_BORDER = {
+    style: "SOLID",
+    width: 1,
+    color: { red: 0.72, green: 0.72, blue: 0.72 },
+  };
 
-    // @ts-expect-error - TODO: fix this
-    cell_value.userEnteredFormat = { borders };
-    fields.push("userEnteredFormat.borders");
-  }
+  static GREY_BORDERS = {
+    top: GoogleSheets.GREY_BORDER,
+    bottom: GoogleSheets.GREY_BORDER,
+    right: GoogleSheets.GREY_BORDER,
+    left: GoogleSheets.GREY_BORDER,
+  };
 
-  const rows_payload = { values: [cell_value] };
+  constructor(private spreadsheetId: string, private sheetId: number) {}
 
-  return {
-    updateCells: {
-      rows: Array(end_row - start_row).fill(rows_payload),
-      fields: fields.join(","),
-      range: {
-        sheetId: 0,
-        startRowIndex: start_row,
-        endRowIndex: end_row,
-        startColumnIndex: column - 1,
-        endColumnIndex: column,
+  async batchRequest(requests: any[]): Promise<void> {
+    const res = await client.request({
+      url: `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}:batchUpdate`,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    },
-  };
+      body: JSON.stringify({
+        requests: requests,
+      }),
+    });
+
+    if (res.status !== 200) {
+      console.error("Google Sheets Error inserting row -", res.status, res.data);
+    } else {
+      console.info("Google Sheets: inserted requests", requests.length);
+    }
+  }
+
+  async getCellsRange(range: string): Promise<any[]> {
+    const res = await client.request<any>({
+      url: `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/${encodeURIComponent(range)}`,
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).catch((error) => {
+      console.error("Google Sheets Error getting cells range -", error);
+      return { data: { values: [] } };
+    });
+    return res.data.values;
+  }
+
+  insertRowsRequest(amount: number, startIndex = 1) {
+    if (startIndex < 0 || amount < 0) {
+      throw new Error("Invalid start index or amount");
+    }
+    return {
+      insertDimension: {
+        inheritFromBefore: false,
+        range: {
+          sheetId: this.sheetId,
+          dimension: "ROWS",
+          startIndex: startIndex,
+          endIndex: startIndex + amount,
+        },
+      },
+    };
+  }
+
+  updateRowsRequest(rows: any[], fields: Fields[], startIndex = 1) {
+    return {
+      updateCells: {
+        rows: rows,
+        fields: fields.join(","),
+        start: {
+          sheetId: this.sheetId,
+          rowIndex: startIndex,
+          columnIndex: 0,
+        },
+      },
+    };
+  }
+
+  updateCellRequest(
+    value: any,
+    fields: Fields[],
+    rowIndex: number,
+    columnIndex: number,
+  ) {
+    return {
+      updateCells: {
+        rows: [{ values: [value] }],
+        fields: fields.join(","),
+        range: {
+          sheetId: this.sheetId,
+          startRowIndex: rowIndex,
+          endRowIndex: rowIndex + 1,
+          startColumnIndex: columnIndex,
+          endColumnIndex: columnIndex + 1,
+        },
+      },
+    };
+  }
+
+  urlCell(
+    text: string,
+    urls: string[],
+    borders?: any,
+  ) {
+    let cellData;
+
+    if (!urls || urls.length === 0) {
+      cellData = {
+        userEnteredValue: {
+          stringValue: text,
+        },
+      };
+    } else if (urls.length === 1) {
+      cellData = {
+        userEnteredValue: {
+          stringValue: text,
+        },
+        textFormatRuns: [
+          {
+            startIndex: 0,
+            format: {
+              link: {
+                uri: urls[0],
+              },
+            },
+          },
+        ],
+      };
+    } else {
+      const stringParts: string[] = [];
+      const formatRuns = [];
+      let currentIndex = 0;
+
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        const linkText = `${text} #${i + 1}`;
+        stringParts.push(linkText);
+
+        formatRuns.push({
+          startIndex: currentIndex,
+          format: {
+            link: { uri: url },
+          },
+        });
+
+        currentIndex += linkText.length;
+
+        if (i < urls.length - 1) {
+          formatRuns.push({
+            startIndex: currentIndex,
+            format: {
+              underline: false,
+              foregroundColorStyle: {
+                themeColor: "TEXT",
+              },
+            },
+          });
+          currentIndex += 2;
+        }
+      }
+
+      cellData = {
+        userEnteredValue: {
+          stringValue: stringParts.join(", "),
+        },
+        textFormatRuns: formatRuns,
+      };
+    }
+
+    if (borders) {
+      // @ts-expect-error - TODO: fix this
+      cellData.userEnteredFormat = { borders };
+    }
+
+    return cellData;
+  }
 }

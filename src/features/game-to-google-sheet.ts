@@ -1,6 +1,6 @@
 import { config } from "../config.ts";
 import { GoogleSearch } from "@shevernitskiy/scraperator";
-import { BLACK_BORDER, GREY_BORDERS, updateCellValue } from "../libs/google-sheets.ts";
+import { GoogleSheets } from "../libs/google-sheets.ts";
 
 export async function addGameToGoogleSheet(game: string, first_game_in_day = false): Promise<void> {
   let game_url = await getGameSteamUrl(`steam ${game}`, /store\.steampowered\.com\/app\/(\d+)/).catch((error) => {
@@ -33,53 +33,34 @@ async function getGameSteamUrl(query: string, test: RegExp): Promise<string | un
 }
 
 async function insertFirstRowRaw(date: string, game: string, url?: string, bottom_border = false) {
-  const borders = bottom_border ? { ...GREY_BORDERS, bottom: BLACK_BORDER } : GREY_BORDERS;
+  const googleSheets = new GoogleSheets(config.google_sheets.spreadsheet_id, config.google_sheets.sheet_id_games);
+  const borders = bottom_border
+    ? { ...GoogleSheets.GREY_BORDERS, bottom: GoogleSheets.BLACK_BORDER }
+    : GoogleSheets.GREY_BORDERS;
 
-  await updateCellValue(config.google_sheets.spreadsheet_id, [
-    {
-      insertDimension: {
-        inheritFromBefore: false,
-        range: {
-          sheetId: config.google_sheets.sheet_id,
-          dimension: "ROWS",
-          startIndex: 1,
-          endIndex: 2,
+  await googleSheets.batchRequest([
+    googleSheets.insertRowsRequest(1),
+    googleSheets.updateRowsRequest(
+      [
+        {
+          values: [
+            {
+              userEnteredValue: { stringValue: date },
+              userEnteredFormat: { borders },
+            },
+            googleSheets.urlCell(game, url ? [url] : [], borders),
+            { userEnteredFormat: { borders } },
+            { userEnteredFormat: { borders } },
+            { userEnteredFormat: { borders } },
+            {
+              userEnteredFormat: {
+                borders: { ...borders, right: GoogleSheets.BLACK_BORDER },
+              },
+            },
+          ],
         },
-      },
-    },
-    {
-      updateCells: {
-        rows: [
-          {
-            values: [
-              {
-                userEnteredValue: { stringValue: date },
-                userEnteredFormat: { borders },
-              },
-              {
-                userEnteredValue: url ? { formulaValue: `=HYPERLINK("${url}"; "${game}")` } : { stringValue: game },
-                userEnteredFormat: { borders },
-              },
-              { userEnteredFormat: { borders } },
-              { userEnteredFormat: { borders } },
-              { userEnteredFormat: { borders } },
-              {
-                userEnteredFormat: {
-                  borders: { ...borders, right: BLACK_BORDER },
-                },
-              },
-            ],
-          },
-        ],
-        fields: "userEnteredValue,userEnteredFormat.borders",
-        range: {
-          sheetId: 0,
-          startRowIndex: 1,
-          endRowIndex: 2,
-          startColumnIndex: 0,
-          endColumnIndex: 6,
-        },
-      },
-    },
+      ],
+      ["userEnteredValue", "textFormatRuns", "userEnteredFormat.borders"],
+    ),
   ]);
 }

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { Boosty } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
-import { getCellsRange, updateCellValue, updateUrlCellRequest } from "../libs/google-sheets.ts";
+import { GoogleSheets } from "../libs/google-sheets.ts";
 import { seconds } from "../utils.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
@@ -24,6 +24,8 @@ type Row = {
   boosty: any;
   is_last_for_date: boolean;
 };
+
+const googleSheets = new GoogleSheets(config.google_sheets.spreadsheet_id, config.google_sheets.sheet_id_games);
 
 async function getYoutubeVideos(): Promise<YoutubeVideo[]> {
   const res = await fetch(
@@ -103,7 +105,7 @@ function proccessYoutubeVideos(videos: YoutubeVideo[]): Map<string, string> {
   for (const video of videos) {
     const date_of_stream = video.title.match(REGEX_DATE)?.[0];
     if (!date_of_stream) continue;
-    for (const timecode of video.description.matchAll(/(\d+:\d+:\d+) – (.+)/g)) {
+    for (const timecode of video.description.matchAll(/(\d+:\d+:\d+)\s{0,1}–\s{0,1}(.+)/g)) {
       const sec = seconds(timecode[1]);
       if (!sec || isNaN(sec) || sec < 0) continue;
       out.set(`${date_of_stream} ${timecode[2].toLowerCase()?.trim()}`, `https://youtu.be/${video.id}?t=${sec}s`);
@@ -130,19 +132,20 @@ function prepareUpdateRequests(
         url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -9)}`);
       }
       if (!url) continue;
-      out.push(
-        updateUrlCellRequest(row.row_index + 1, row.row_index + 1, 5, "YouTube", url, false, row.is_last_for_date),
-      );
+
+      out.push(googleSheets.updateCellRequest(
+        googleSheets.urlCell("YouTube", [url]),
+        ["userEnteredValue", "textFormatRuns"],
+        row.row_index,
+        4,
+      ));
     }
   }
   return out;
 }
 
-export async function fillYoutubeUrls(): Promise<void> {
-  const last_50_rows = await getCellsRange(
-    config.google_sheets.spreadsheet_id,
-    `${config.google_sheets.sheet_name}!A2:F50`,
-  );
+export async function fillYoutubeGames(): Promise<void> {
+  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
   const current_data = prepareCurrentData(last_50_rows);
   const missed_youtube_dates = new Set(
     Object.values(current_data).flat().filter((item) => item && !item.youtube).map((item) => item && item.date),
@@ -158,36 +161,30 @@ export async function fillYoutubeUrls(): Promise<void> {
   const youtube_timecodes_urls = proccessYoutubeVideos(
     youtube_videos.filter((item) => youtube_ids_to_get_info.includes(item.id)),
   );
+
   const youtube_requests = prepareUpdateRequests(youtube_timecodes_urls, current_data);
   if (youtube_requests.length > 0) {
-    await updateCellValue(config.google_sheets.spreadsheet_id, youtube_requests);
+    await googleSheets.batchRequest(youtube_requests);
   }
 }
 
-export async function fillBoostyUrls(): Promise<void> {
-  const last_50_rows = await getCellsRange(
-    config.google_sheets.spreadsheet_id,
-    `${config.google_sheets.sheet_name}!A2:F50`,
-  );
+export async function fillBoostyGames(): Promise<void> {
+  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
   const current_data = prepareCurrentData(last_50_rows);
   const date_to_boosty_url = await getBoostyPostDateToUrlMap();
   const requests = [];
   for (const row of Object.values(current_data).flat().filter((item) => item && !item.boosty)) {
     const url = date_to_boosty_url.get(row.date);
     if (url) {
-      const request = updateUrlCellRequest(
-        row.row_index + 1,
-        row.row_index + 1,
-        6,
-        "Boosty",
-        url,
-        true,
-        row.is_last_for_date,
-      );
-      requests.push(request);
+      requests.push(googleSheets.updateCellRequest(
+        googleSheets.urlCell("Boosty", [url]),
+        ["userEnteredValue", "textFormatRuns"],
+        row.row_index,
+        5,
+      ));
     }
   }
   if (requests.length > 0) {
-    await updateCellValue(config.google_sheets.spreadsheet_id, requests);
+    await googleSheets.batchRequest(requests);
   }
 }

@@ -7,7 +7,9 @@ import { youtubeVideoCut } from "../post/video-cut.ts";
 import { streamTimecodes } from "../features/timecodes.ts";
 import { shortsStats } from "../features/shorts-stat.ts";
 import { boostyBosts } from "../features/boosty-posts.ts";
-import { fillBoostyUrls, fillYoutubeUrls } from "../features/record-url-to-google-sheets.ts";
+import { fillBoostyGames, fillYoutubeGames } from "../features/games-url-to-google-sheets.ts";
+import { fillBoostyRecords, fillTwitchRecords, fillYoutubeRecords } from "../features/records-url-to-goolge-sheets.ts";
+import { addGameToGoogleSheet } from "../features/game-to-google-sheet.ts";
 
 export const bot = new Bot(config.telegram.token);
 const admin_filter = (ctx: Context) => ctx.hasChatType("private") && config.admins.includes(ctx.from?.id ?? 0);
@@ -48,14 +50,25 @@ bot.filter(admin_filter).hears(/^(\/boosty|бусти|boosty)\s*(.+){0,1}/, asyn
   await boostyBosts(ctx);
 });
 
-bot.filter(admin_filter).hears(/^(ссылкиб)/, async (ctx) => {
+bot.filter(admin_filter).hears(/^(\/urls)\s(\w+)\s(\w+)/, async (ctx) => {
   console.log(ctx.from?.id, ctx.message?.text);
-  await fillBoostyUrls();
+
+  if (ctx.match?.at(2) === "games") {
+    if (ctx.match?.at(3) === "youtube") await fillYoutubeGames();
+    if (ctx.match?.at(3) === "boosty") await fillBoostyGames();
+  }
+
+  if (ctx.match?.at(2) === "records") {
+    if (ctx.match?.at(3) === "twitch") await fillTwitchRecords();
+    if (ctx.match?.at(3) === "youtube") await fillYoutubeRecords();
+    if (ctx.match?.at(3) === "boosty") await fillBoostyRecords();
+  }
 });
 
-bot.filter(admin_filter).hears(/^(ссылкию)/, async (ctx) => {
+bot.filter(admin_filter).hears(/^(\/game)\s"(.*)"\s"(.*)"/, async (ctx) => {
   console.log(ctx.from?.id, ctx.message?.text);
-  await fillYoutubeUrls();
+  const first_game_in_day = ctx.match?.at(3) === "true";
+  await addGameToGoogleSheet(ctx.match?.at(2) ?? "Just Chatting", first_game_in_day);
 });
 
 bot.catch((err) => {
