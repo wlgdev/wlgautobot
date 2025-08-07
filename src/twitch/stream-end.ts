@@ -6,8 +6,9 @@ export async function streamEnd(): Promise<void> {
   await using state = await getState();
 
   state.stream.online = false;
+  state.stream.end_time = Date.now();
   await sendTimecodesMessage(
-    state.stream.history,
+    state,
     config.subscription.timecodes,
     new Date(state.stream.start_time).toLocaleDateString("ru-RU"),
   );

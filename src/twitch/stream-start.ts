@@ -21,6 +21,7 @@ export async function streamStart(): Promise<void> {
     category: info.category,
     category_id: info.category_id,
     start_time: info.start_time,
+    end_time: 0,
     history: [{
       title: info.title,
       category: info.category,

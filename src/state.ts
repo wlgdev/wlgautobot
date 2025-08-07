@@ -16,6 +16,7 @@ export const default_state = {
     category: null as string | null,
     category_id: null as string | null,
     start_time: 0,
+    end_time: 0,
     history: [] as StreamHistoryEntry[],
   },
   stats: {
