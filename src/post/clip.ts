@@ -1,9 +1,18 @@
 // deno-lint-ignore-file no-explicit-any
-import { Vk, type VkVideoInfo, Youtube, type YoutubeShortsInfo } from "@shevernitskiy/scraperator";
+import { Vk, type VkVideoInfo } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { stripHashtags, tsToString } from "../utils.ts";
 import { Context } from "@grammyjs/grammy";
 import { getTikTokUserVideo, TikTokVideoItem } from "../libs/tiktok.ts";
+
+type YoutubeShortsInfo = {
+  id: string;
+  title: string;
+  channel_id: string;
+  channel_title: string;
+  description: string;
+  url: string;
+};
 
 export async function youtubeVkClip(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -36,15 +45,40 @@ export type EntryItem = {
   tiktok?: TikTokVideoItem;
 };
 
+async function getYoutubeVideoShorts(limit = 50): Promise<YoutubeShortsInfo[]> {
+  const res = await fetch(
+    `https://www.googleapis.com/youtube/v3/playlistItems?key=${config.youtube.apikey}&playlistId=${config.youtube.shorts_playlist_id}&maxResults=${limit}&part=snippet`,
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch data from Youtube API ${res.body ? await res.text() : ""}`,
+    );
+  }
+
+  const data = await res.json();
+
+  return data.items.map((item: any) => {
+    return {
+      id: item.snippet.resourceId.videoId,
+      title: item.snippet.title,
+      channel_id: item.snippet.channelId,
+      channel_title: item.snippet.channelTitle,
+      description: item.snippet.description,
+      url: `https://youtube.com/shorts/${item.snippet.resourceId.videoId}`,
+    } satisfies YoutubeShortsInfo;
+  });
+}
+
 export async function processClip(search?: string): Promise<{ text: string; url: string }> {
-  const yt = new Youtube(config.youtube.channel);
   const vk = new Vk(config.vk.channel);
 
   const [yt_res, vk_res, tt_res] = await Promise.all([
-    yt.getShorts().then((data) => data.items),
+    getYoutubeVideoShorts(),
     vk.getClips(50),
     getTikTokUserVideo(config.tiktok.channel, config.tiktok.rapidkey),
-  ]).catch(() => {
+  ]).catch((err) => {
+    console.error(err);
     throw new Error("не удалось загрузить клипы/шортсы с вк и ютуба");
   });
 

@@ -208,7 +208,7 @@ async function generateDescription(timecodes: string): Promise<string> {
   const prompt = config.llm.stream_record_prompt(timecodes);
 
   const answer = await llmFallback(prompt, [
-    [geminiThinking, "gemini-2.5-flash-preview-05-20"],
+    [geminiThinking, "gemini-2.5-flash"],
     [gemini, "gemini-2.0-flash"],
   ]).catch((err) => {
     console.error(err);

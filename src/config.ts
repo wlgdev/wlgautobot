@@ -87,6 +87,7 @@ export function getConfig() {
       channel_vod: Deno.env.get("YOUTUBE_VODS_CHANNEL")!,
       apikey: Deno.env.get("YOUTUBE_APIKEY")!,
       upload_vods_playlist_id: Deno.env.get("YOUTUBE_VODS_UPLOAD_PLAYLIST_ID")!,
+      shorts_playlist_id: Deno.env.get("YOUTUBE_SHORTS_PLAYLIST_ID")!,
     },
     tiktok: {
       channel: Deno.env.get("TIKTOK_CHANNEL")!,
