@@ -4,6 +4,7 @@ import { config } from "../config.ts";
 import { stripHashtags, tsToString } from "../utils.ts";
 import { Context } from "@grammyjs/grammy";
 import { getTikTokUserVideo, TikTokVideoItem } from "../libs/tiktok.ts";
+import { YoutubApi } from "../libs/youtube-api.ts";
 
 type YoutubeShortsInfo = {
   id: string;
@@ -45,36 +46,12 @@ export type EntryItem = {
   tiktok?: TikTokVideoItem;
 };
 
-async function getYoutubeVideoShorts(limit = 50): Promise<YoutubeShortsInfo[]> {
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/playlistItems?key=${config.youtube.apikey}&playlistId=${config.youtube.shorts_playlist_id}&maxResults=${limit}&part=snippet`,
-  );
-
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch data from Youtube API ${res.body ? await res.text() : ""}`,
-    );
-  }
-
-  const data = await res.json();
-
-  return data.items.map((item: any) => {
-    return {
-      id: item.snippet.resourceId.videoId,
-      title: item.snippet.title,
-      channel_id: item.snippet.channelId,
-      channel_title: item.snippet.channelTitle,
-      description: item.snippet.description,
-      url: `https://youtube.com/shorts/${item.snippet.resourceId.videoId}`,
-    } satisfies YoutubeShortsInfo;
-  });
-}
-
 export async function processClip(search?: string): Promise<{ text: string; url: string }> {
   const vk = new Vk(config.vk.channel);
+  const youtube = new YoutubApi(config.youtube.apikey);
 
   const [yt_res, vk_res, tt_res] = await Promise.all([
-    getYoutubeVideoShorts(),
+    youtube.getPlaylistItems(config.youtube.shorts_playlist_id, 50),
     vk.getClips(50),
     getTikTokUserVideo(config.tiktok.channel, config.tiktok.rapidkey),
   ]).catch((err) => {

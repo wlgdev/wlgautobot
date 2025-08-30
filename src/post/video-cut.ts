@@ -1,17 +1,9 @@
-import {
-  Dzen,
-  DzenVideoInfo,
-  Rutube,
-  RutubeVideoInfo,
-  Vk,
-  Youtube,
-  YoutubeIdDetails,
-  YoutubeVideoInfo,
-} from "@shevernitskiy/scraperator";
+import { Dzen, type DzenVideoInfo, Rutube, type RutubeVideoInfo, Vk } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { geminiThinking } from "../libs/gemini.ts";
 import { Context } from "@grammyjs/grammy";
 import { VkVideoInfo } from "@shevernitskiy/scraperator";
+import { YoutubApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
 
 export async function youtubeVideoCut(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -36,16 +28,11 @@ async function proccessYoutubeVideoCut(
 
   const video = videos[0];
 
-  const [video_info, vk_video, rutube_video, dzen_video] = await Promise.allSettled([
-    getVideoInfoById(video.id),
+  const [vk_video, rutube_video, dzen_video] = await Promise.allSettled([
     getVkVideos(video.title),
     getRutubeVideos(video.title),
     getDzenVideos(video.title),
   ]);
-
-  if (video_info.status === "rejected") {
-    throw new Error(`не удалось получить информацию о ютуб видео ${video.id}`);
-  }
 
   const urls: [string, string][] = [["YouTube", video.url]];
   if (vk_video.status === "fulfilled") {
@@ -60,8 +47,8 @@ async function proccessYoutubeVideoCut(
     urls.push(["Дзен", dzen_video.value[0].url]);
   }
 
-  const desc = getDescFromDescription(video_info.value.description);
-  const text = await generatePostText(video_info.value.title, desc).catch(() => {
+  const desc = getDescFromDescription(video.description);
+  const text = await generatePostText(video.title, desc).catch(() => {
     throw new Error("не удалось сгенерировать описание");
   });
 
@@ -90,23 +77,18 @@ async function createPost(
 }
 
 async function getYoutubeVideos(search?: string): Promise<YoutubeVideoInfo[]> {
-  const yt = new Youtube(config.youtube.channel);
-  const videos = await yt.getVideos();
-  const result = search ? videos.items.filter((item) => item.title.includes(search)) : videos.items;
+  const youtube = new YoutubApi(config.youtube.apikey);
+  const lastVideos = await youtube.getPlaylistItems(config.youtube.upload_playlist_id, 50);
+  if (lastVideos.length === 0) {
+    throw new Error("не удалось получить список видео youtube");
+  }
+
+  const videos = await youtube.getVideos(lastVideos.map((item) => item.id));
+  const result = search ? videos.filter((item) => item.title.includes(search)) : videos;
   if (result.length === 0) {
     throw new Error("не удалось получить список видео youtube");
   }
   return result;
-}
-
-async function getVideoInfoById(id: string): Promise<YoutubeIdDetails> {
-  const yt = new Youtube(config.youtube.channel);
-  const video_info = await yt.getIdInfo(id).catch((err) => {
-    console.error(err);
-    throw new Error(`не удалось получить информацию о видео ${id}`);
-  });
-
-  return video_info;
 }
 
 async function getVkVideos(search?: string): Promise<VkVideoInfo[]> {
