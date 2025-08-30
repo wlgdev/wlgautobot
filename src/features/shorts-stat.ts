@@ -1,9 +1,10 @@
 import { JWT } from "google-auth-library";
-import { Vk, Youtube } from "@shevernitskiy/scraperator";
+import { Vk } from "@shevernitskiy/scraperator";
 import { Context, InputFile } from "@grammyjs/grammy";
 import { config } from "../config.ts";
 import { getTikTokUserVideo } from "../libs/tiktok.ts";
 import { getState } from "../state.ts";
+import { YoutubeApi } from "../libs/youtube-api.ts";
 
 type StatsDataEntry = {
   date: string;
@@ -21,21 +22,6 @@ type StatsDataEntry = {
   tt_likes: number;
   tt_comments: number;
   tt_reposts: number;
-};
-
-type YoutubeVideoStats = {
-  id: string;
-  title: string;
-  channel_id: string;
-  channel_title: string;
-  description: string;
-  category_id: string;
-  thumbnail: string;
-  tags: string[];
-  views: string;
-  likes: string;
-  favorites: string;
-  comments: string;
 };
 
 const HIGHLIGHT_LIMIT = 30000;
@@ -76,15 +62,15 @@ export async function shortsStats(ctx: Context): Promise<void> {
 }
 
 export async function fetchShortStatsData(limit?: string): Promise<StatsDataEntry[]> {
-  const youtube = new Youtube(config.youtube.channel);
+  const youtube = new YoutubeApi(config.youtube.apikey);
   const vk = new Vk(config.vk.channel);
   const [shorts, clips, tiktok] = await Promise.all([
-    youtube.getShorts(),
+    youtube.getPlaylistItems(config.youtube.shorts_playlist_id, 50),
     vk.getClips(60),
     getTikTokUserVideo(config.tiktok.channel, config.tiktok.rapidkey, 50),
   ]);
 
-  const youtube_shorts_stats = await getYoutubeVideoStats(shorts.items.map((item) => item.id));
+  const youtube_shorts_stats = await youtube.getVideos(shorts.map((item) => item.id));
 
   const out: StatsDataEntry[] = [];
 
@@ -117,40 +103,6 @@ export async function fetchShortStatsData(limit?: string): Promise<StatsDataEntr
   }
 
   return out;
-}
-
-async function getYoutubeVideoStats(ids: string[]): Promise<YoutubeVideoStats[]> {
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/videos?key=${config.youtube.apikey}&part=snippet,statistics&id=${
-      ids.join(",")
-    }`,
-  );
-
-  if (!res.ok) {
-    throw new Error(
-      `Failed to fetch data from Youtube API ${res.body ? await res.text() : ""}`,
-    );
-  }
-
-  const data = await res.json();
-
-  // deno-lint-ignore no-explicit-any
-  return data.items.map((item: any) => {
-    return {
-      id: item.id,
-      title: item.snippet.title,
-      channel_id: item.snippet.channelId,
-      channel_title: item.snippet.channelTitle,
-      description: item.snippet.description,
-      category_id: item.snippet.categoryId,
-      thumbnail: item.snippet.thumbnails.maxres.url,
-      tags: item.snippet.tags,
-      views: item.statistics.viewCount,
-      likes: item.statistics.likeCount,
-      favorites: item.statistics.favoriteCount,
-      comments: item.statistics.commentCount,
-    } satisfies YoutubeVideoStats;
-  });
 }
 
 function formatDate(date: Date): string {

@@ -4,7 +4,7 @@ import { config } from "../config.ts";
 import { stripHashtags, tsToString } from "../utils.ts";
 import { Context } from "@grammyjs/grammy";
 import { getTikTokUserVideo, TikTokVideoItem } from "../libs/tiktok.ts";
-import { YoutubApi } from "../libs/youtube-api.ts";
+import { YoutubeApi } from "../libs/youtube-api.ts";
 
 type YoutubeShortsInfo = {
   id: string;
@@ -48,7 +48,7 @@ export type EntryItem = {
 
 export async function processClip(search?: string): Promise<{ text: string; url: string }> {
   const vk = new Vk(config.vk.channel);
-  const youtube = new YoutubApi(config.youtube.apikey);
+  const youtube = new YoutubeApi(config.youtube.apikey);
 
   const [yt_res, vk_res, tt_res] = await Promise.all([
     youtube.getPlaylistItems(config.youtube.shorts_playlist_id, 50),

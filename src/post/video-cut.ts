@@ -3,7 +3,7 @@ import { config } from "../config.ts";
 import { geminiThinking } from "../libs/gemini.ts";
 import { Context } from "@grammyjs/grammy";
 import { VkVideoInfo } from "@shevernitskiy/scraperator";
-import { YoutubApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
+import { YoutubeApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
 
 export async function youtubeVideoCut(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -77,7 +77,7 @@ async function createPost(
 }
 
 async function getYoutubeVideos(search?: string): Promise<YoutubeVideoInfo[]> {
-  const youtube = new YoutubApi(config.youtube.apikey);
+  const youtube = new YoutubeApi(config.youtube.apikey);
   const lastVideos = await youtube.getPlaylistItems(config.youtube.upload_playlist_id, 50);
   if (lastVideos.length === 0) {
     throw new Error("не удалось получить список видео youtube");

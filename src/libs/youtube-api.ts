@@ -29,7 +29,7 @@ export type YoutubePlaylistVideoInfo = {
   shorts_url: string;
 };
 
-export class YoutubApi {
+export class YoutubeApi {
   constructor(private readonly apiKey: string) {}
 
   async getPlaylistItems(playlistId: string, limit = 50): Promise<YoutubeVideoInfo[]> {
