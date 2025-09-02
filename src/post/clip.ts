@@ -4,7 +4,7 @@ import { config } from "../config.ts";
 import { stripHashtags, tsToString } from "../utils.ts";
 import { Context } from "@grammyjs/grammy";
 import { getTikTokUserVideo, TikTokVideoItem } from "../libs/tiktok.ts";
-import { YoutubeApi } from "../libs/youtube-api.ts";
+import { YoutubeApi, type YoutubePlaylistVideoInfo } from "../libs/youtube-api.ts";
 
 type YoutubeShortsInfo = {
   id: string;
@@ -41,7 +41,7 @@ export async function youtubeVkClip(ctx: Context): Promise<void> {
 
 export type EntryItem = {
   key: string;
-  youtube?: YoutubeShortsInfo;
+  youtube?: YoutubePlaylistVideoInfo;
   vk?: VkVideoInfo;
   tiktok?: TikTokVideoItem;
 };
@@ -82,7 +82,7 @@ export async function processClip(search?: string): Promise<{ text: string; url:
     throw new Error("не удалось найти подходящие клипы/шортсы с вк и ютуба");
   }
 
-  const urls: [string, string][] = [["YouTube", entry.youtube.url]];
+  const urls: [string, string][] = [["YouTube", entry.youtube.shorts_url]];
   if (entry.vk.url) {
     urls.push(["VK", entry.vk.url]);
   }
@@ -98,7 +98,11 @@ export async function processClip(search?: string): Promise<{ text: string; url:
   };
 }
 
-export function recentClips(youtube: YoutubeShortsInfo[], vk: VkVideoInfo[], tiktok: TikTokVideoItem[]): EntryItem[] {
+export function recentClips(
+  youtube: YoutubePlaylistVideoInfo[],
+  vk: VkVideoInfo[],
+  tiktok: TikTokVideoItem[],
+): EntryItem[] {
   const data = new Map<string, EntryItem>();
 
   for (const item of vk) {

@@ -32,7 +32,7 @@ export type YoutubePlaylistVideoInfo = {
 export class YoutubeApi {
   constructor(private readonly apiKey: string) {}
 
-  async getPlaylistItems(playlistId: string, limit = 50): Promise<YoutubeVideoInfo[]> {
+  async getPlaylistItems(playlistId: string, limit = 50): Promise<YoutubePlaylistVideoInfo[]> {
     const res = await fetch(
       `https://www.googleapis.com/youtube/v3/playlistItems?key=${this.apiKey}&playlistId=${playlistId}&maxResults=${limit}&part=snippet,contentDetails`,
     );

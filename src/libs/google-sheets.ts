@@ -130,6 +130,12 @@ export class GoogleSheets {
           stringValue: text,
         },
       };
+    } else if (urls.length === 1 && (text.length === 0 || text === undefined)) {
+      cellData = {
+        userEnteredValue: {
+          stringValue: "",
+        },
+      };
     } else if (urls.length === 1) {
       cellData = {
         userEnteredValue: {
