@@ -84,5 +84,10 @@ if (!isDenoDeploy) {
     }
   });
 
+  server.get("/youtube", async (c) => {
+    console.log(c.req, await c.req.json());
+    return c.text("Ok");
+  });
+
   Deno.serve({ port: 8080, onListen: () => {} }, server.fetch);
 }
