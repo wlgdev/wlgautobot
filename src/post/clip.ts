@@ -6,15 +6,6 @@ import { Context } from "@grammyjs/grammy";
 import { getTikTokUserVideo, TikTokVideoItem } from "../libs/tiktok.ts";
 import { YoutubeApi, type YoutubePlaylistVideoInfo } from "../libs/youtube-api.ts";
 
-type YoutubeShortsInfo = {
-  id: string;
-  title: string;
-  channel_id: string;
-  channel_title: string;
-  description: string;
-  url: string;
-};
-
 export async function youtubeVkClip(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
   const { message_id } = await ctx.reply(

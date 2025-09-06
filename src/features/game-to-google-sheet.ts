@@ -2,7 +2,11 @@ import { config } from "../config.ts";
 import { GoogleSearch } from "@shevernitskiy/scraperator";
 import { GoogleSheets } from "../libs/google-sheets.ts";
 
-export async function addGameToGoogleSheet(game: string, first_game_in_day = false): Promise<void> {
+export async function addGameToGoogleSheet(
+  game: string,
+  first_game_in_day = false,
+  start_time?: number,
+): Promise<void> {
   let game_url = await getGameSteamUrl(`steam ${game}`, /store\.steampowered\.com\/app\/(\d+)/).catch((error) => {
     console.error("Cannot get steam game url", error);
     return undefined;
@@ -13,7 +17,7 @@ export async function addGameToGoogleSheet(game: string, first_game_in_day = fal
       return undefined;
     });
   }
-  const d = new Date();
+  const d = start_time ? new Date(start_time) : new Date();
   const today = `${d.getDate().toString().padStart(2, "0")}.${
     (d.getMonth() + 1).toString().padStart(2, "0")
   }.${d.getFullYear()}`;
