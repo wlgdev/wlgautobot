@@ -41,7 +41,7 @@ export async function streamStart(): Promise<void> {
       first_game_in_day = true;
     }
 
-    await addGameToGoogleSheet(info.category, first_game_in_day).catch((error) => {
+    addGameToGoogleSheet(info.category, info.category_id, first_game_in_day).catch((error) => {
       console.error("Google Sheets: failed add game", error);
     });
   }

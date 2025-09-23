@@ -9,7 +9,6 @@ import { shortsStats } from "../features/shorts-stat.ts";
 import { boostyBosts } from "../features/boosty-posts.ts";
 import { fillBoostyGames, fillYoutubeGames } from "../features/games-url-to-google-sheets.ts";
 import { fillBoostyRecords, fillTwitchRecords, fillYoutubeRecords } from "../features/records-url-to-goolge-sheets.ts";
-import { addGameToGoogleSheet } from "../features/game-to-google-sheet.ts";
 
 export const bot = new Bot(config.telegram.token);
 const admin_filter = (ctx: Context) => ctx.hasChatType("private") && config.admins.includes(ctx.from?.id ?? 0);
@@ -63,12 +62,6 @@ bot.filter(admin_filter).hears(/^(\/urls)\s(\w+)\s(\w+)/, async (ctx) => {
     if (ctx.match?.at(3) === "youtube") await fillYoutubeRecords();
     if (ctx.match?.at(3) === "boosty") await fillBoostyRecords();
   }
-});
-
-bot.filter(admin_filter).hears(/^(\/game)\s"(.*)"\s"(.*)"/, async (ctx) => {
-  console.log(ctx.from?.id, ctx.message?.text);
-  const first_game_in_day = ctx.match?.at(3) === "true";
-  await addGameToGoogleSheet(ctx.match?.at(2) ?? "Just Chatting", first_game_in_day);
 });
 
 bot.catch((err) => {

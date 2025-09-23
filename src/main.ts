@@ -84,8 +84,16 @@ if (!isDenoDeploy) {
     }
   });
 
-  server.get("/youtube", async (c) => {
-    console.log(c.req, await c.req.json());
+  server.get("/youtube", (c) => {
+    const challenge = c.req.query("hub.challenge");
+    console.log("Youtube challenge", challenge);
+    if (challenge) return c.text(challenge, 200);
+    return c.text("Ok");
+  });
+
+  server.post("/youtube", async (c) => {
+    const data = await c.req.text();
+    console.log("Youtube data", data);
     return c.text("Ok");
   });
 
