@@ -42,6 +42,12 @@ export class GoogleSheets {
       body: JSON.stringify({
         requests: requests,
       }),
+      retry: true,
+      retryConfig: {
+        retryDelay: 1000,
+        retryDelayMultiplier: 2,
+        noResponseRetries: 5,
+      },
     });
 
     if (res.status !== 200) {

@@ -1,7 +1,6 @@
 import { config } from "../config.ts";
-// import { GoogleSearch } from "@shevernitskiy/scraperator";
+import { braveSearch } from "@shevernitskiy/scraperator";
 import { GoogleSheets } from "../libs/google-sheets.ts";
-import { searchDDG } from "../libs/ddg-search.ts";
 
 export async function addGameToGoogleSheet(
   game: string,
@@ -37,8 +36,7 @@ export async function addGameToGoogleSheet(
 }
 
 export async function getGameSteamUrl(query: string, test: RegExp): Promise<string | undefined> {
-  // const data = await GoogleSearch.search(query);
-  const data = await searchDDG(query);
+  const data = await braveSearch(query);
   if (data?.length === 0) return;
 
   for (let i = 0; i < 2; i++) {
