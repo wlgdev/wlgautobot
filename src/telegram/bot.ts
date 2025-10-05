@@ -1,4 +1,4 @@
-import { Bot, Context } from "@grammyjs/grammy";
+import { Bot } from "@grammyjs/grammy";
 
 import { youtubeVkClip } from "../post/clip.ts";
 import { config } from "../config.ts";
@@ -9,44 +9,44 @@ import { shortsStats } from "../features/shorts-stat.ts";
 import { boostyBosts } from "../features/boosty-posts.ts";
 
 export const bot = new Bot(config.telegram.token);
-const admin_filter = (ctx: Context) => ctx.hasChatType("private") && config.admins.includes(ctx.from?.id ?? 0);
 
-bot.filter(admin_filter).hears(/^(\/ping|пинг|ping)/, async (ctx) => {
+bot.use(async (ctx, next) => {
+  if (!ctx.hasChatType("private") || !config.admins.includes(ctx.from?.id ?? 0)) {
+    await ctx.reply("нет доступа").catch(() => {});
+  } else {
+    console.log(ctx.from?.id, ctx.message?.text);
+    await next();
+  }
+});
+
+bot.hears(/^(\/ping|пинг|ping)/, async (ctx) => {
   await ctx.reply("pong");
 });
 
-bot.filter(admin_filter).hears(/^(\/clip|клип|clip)\s*(.+){0,1}/, async (ctx) => {
-  console.log(ctx.from?.id, ctx.message?.text);
+bot.hears(/^(\/clip|клип|clip)\s*(.+){0,1}/, async (ctx) => {
   await youtubeVkClip(ctx);
 });
 
-bot.filter(admin_filter).use(yt_menu.handler());
-bot.filter(admin_filter).use(vods_menu.handler());
-bot.filter(admin_filter).hears(/^(\/record|запись|record|вод|vod)\s*(.+){0,1}/, async (ctx) => {
-  console.log(ctx.from?.id, ctx.message?.text);
+bot.use(yt_menu.handler());
+bot.use(vods_menu.handler());
+bot.hears(/^(\/record|запись|record|вод|vod)\s*(.+){0,1}/, async (ctx) => {
   await youtubeRecord(ctx);
 });
 
-bot.filter(admin_filter).hears(/^(\/cut|нарезка|кат|cut)\s*(.+){0,1}/, async (ctx) => {
-  console.log(ctx.from?.id, ctx.message?.text);
+bot.hears(/^(\/cut|нарезка|кат|cut)\s*(.+){0,1}/, async (ctx) => {
   await youtubeVideoCut(ctx);
 });
 
-bot.filter(admin_filter).hears(/^(\/timecodes|таймкоды|timecodes)/, async (ctx) => {
-  console.log(ctx.from?.id, ctx.message?.text);
+bot.hears(/^(\/timecodes|таймкоды|timecodes)/, async (ctx) => {
   await streamTimecodes(ctx);
 });
 
-bot.filter(admin_filter).hears(/^(\/shorts|шортсы|shorts)\s*(.+){0,1}/, async (ctx) => {
-  console.log(ctx.from?.id, ctx.message?.text);
+bot.hears(/^(\/shorts|шортсы|shorts)\s*(.+){0,1}/, async (ctx) => {
   await shortsStats(ctx);
 });
 
-bot.filter(admin_filter).hears(/^(\/boosty|бусти|boosty)\s*(.+){0,1}/, async (ctx) => {
-  console.log(ctx.from?.id, ctx.message?.text);
+bot.hears(/^(\/boosty|бусти|boosty)\s*(.+){0,1}/, async (ctx) => {
   await boostyBosts(ctx);
 });
 
-bot.catch((err) => {
-  console.error(err);
-});
+bot.catch(console.error);
