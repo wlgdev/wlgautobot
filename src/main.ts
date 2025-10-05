@@ -7,36 +7,20 @@ import { scheduleStats } from "./features/shorts-stat.ts";
 import { twitchEventHandler } from "./twitch/event-handler.ts";
 import { bot } from "./telegram/bot.ts";
 import { getLastStream, getLastStreamTitle } from "./features/timecodes.ts";
-import { fillBoostyGames, fillYoutubeGames } from "./features/games-url-to-google-sheets.ts";
-import { fillBoostyRecords, fillTwitchRecords, fillYoutubeRecords } from "./features/records-url-to-goolge-sheets.ts";
+import { fillGamesSheet } from "./features/games-url-to-google-sheets.ts";
+import { fillRecordsSheet } from "./features/records-url-to-goolge-sheets.ts";
 
 Deno.cron("shorts stats", "0 0 26 * *", async () => {
   await scheduleStats();
 });
 
-Deno.cron("fill youtube games urls", "0 7 * * *", async () => {
+Deno.cron("fill games sheet", "0 7 * * *", async () => {
   console.log("fill youtube games urls");
-  await fillYoutubeGames();
+  await fillGamesSheet();
 });
 
-Deno.cron("fill boosty games urls", "10 7 * * *", async () => {
-  console.log("fill boosty games urls");
-  await fillBoostyGames();
-});
-
-Deno.cron("fill twitch records urls", "20 7 * * *", async () => {
-  console.log("fill twitch records urls");
-  await fillTwitchRecords();
-});
-
-Deno.cron("fill youtube records urls", "30 7 * * *", async () => {
-  console.log("fill youtube records urls");
-  await fillYoutubeRecords();
-});
-
-Deno.cron("fill boosty records urls", "40 7 * * *", async () => {
-  console.log("fill youtube records urls");
-  await fillBoostyRecords();
+Deno.cron("fill records sheet", "10 7 * * *", async () => {
+  await fillRecordsSheet();
 });
 
 if (!isDenoDeploy) {
@@ -82,19 +66,6 @@ if (!isDenoDeploy) {
     } else {
       return c.json(await getLastStream());
     }
-  });
-
-  server.get("/youtube", (c) => {
-    const challenge = c.req.query("hub.challenge");
-    console.log("Youtube challenge", challenge);
-    if (challenge) return c.text(challenge, 200);
-    return c.text("Ok");
-  });
-
-  server.post("/youtube", async (c) => {
-    const data = await c.req.text();
-    console.log("Youtube data", data);
-    return c.text("Ok");
   });
 
   Deno.serve({ port: 8080, onListen: () => {} }, server.fetch);

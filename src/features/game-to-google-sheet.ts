@@ -48,9 +48,7 @@ export async function getGameSteamUrl(query: string, test: RegExp): Promise<stri
 
 export async function getGameSteamUrlByTwitchId(id: string): Promise<string | undefined> {
   const res = await fetch(`https://happy-api.shevernitskiy.deno.net/igdb/game/twitch-id/${id}`, {
-    headers: {
-      "X-Secret": "69",
-    },
+    headers: { "X-Secret": "69" },
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) return undefined;

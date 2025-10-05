@@ -206,12 +206,11 @@ function convertRecordToCellsRequests(
   return out;
 }
 
-export async function fillYoutubeRecords() {
-  const currentTabledata = await getCurrentTableData();
+export async function fillYoutubeRecords(currentTabledata: Row[]): Promise<any[]> {
   const missedDates = computeMissedYoutubeDates(currentTabledata);
   if (missedDates.size === 0) {
     console.log("No missed dates for Youtube found in the Record sheet");
-    return;
+    return [];
   } else {
     console.log("Youtube Records -", `Found ${missedDates.size} missed dates`);
   }
@@ -227,9 +226,10 @@ export async function fillYoutubeRecords() {
   );
   if (requests.length === 0) {
     console.log("Youtube Records -", "No videos for missed dates found");
-    return;
+    return [];
   }
-  await googleSheets.batchRequest(requests);
+
+  return requests;
 }
 
 //
@@ -274,12 +274,11 @@ async function getBoostyPosts(): Promise<BoostyPost[]> {
   });
 }
 
-export async function fillBoostyRecords() {
-  const currentTabledata = await getCurrentTableData();
+export async function fillBoostyRecords(currentTabledata: Row[]): Promise<any[]> {
   const missedDates = computeMissedBoostyDates(currentTabledata);
   if (missedDates.size === 0) {
     console.log("No missed dates for Boosty found in the Record sheet");
-    return;
+    return [];
   } else {
     console.log("Boosty Records -", `Found ${missedDates.size} missed dates`);
   }
@@ -295,7 +294,31 @@ export async function fillBoostyRecords() {
   );
   if (requests.length === 0) {
     console.log("Boosty Records -", "No posts for missed dates found");
+    return [];
+  }
+
+  return requests;
+}
+
+export async function fillRecordsSheet(): Promise<void> {
+  console.log("Filling records sheet");
+  await fillTwitchRecords();
+
+  const currentTabledata = await getCurrentTableData();
+
+  const [youtubeResult, boostyResult] = await Promise.allSettled([
+    fillYoutubeRecords(currentTabledata),
+    fillBoostyRecords(currentTabledata),
+  ]);
+  const youtubeRequests = youtubeResult.status === "fulfilled" ? youtubeResult.value : [];
+  const boostyRequests = boostyResult.status === "fulfilled" ? boostyResult.value : [];
+  if (youtubeRequests.length === 0 && boostyRequests.length === 0) {
+    console.log("Nothing to update");
     return;
   }
+  console.log("Youtube requests", youtubeRequests.length);
+  console.log("Boosty requests", boostyRequests.length);
+
+  const requests = youtubeRequests.concat(boostyRequests);
   await googleSheets.batchRequest(requests);
 }

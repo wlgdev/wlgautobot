@@ -24,6 +24,7 @@ export type YoutubePlaylistVideoInfo = {
   description: string;
   thumbnail: string;
   position: number;
+  published_at: number;
   playlist_id: string;
   url: string;
   shorts_url: string;
@@ -34,7 +35,7 @@ export class YoutubeApi {
 
   async getPlaylistItems(playlistId: string, limit = 50): Promise<YoutubePlaylistVideoInfo[]> {
     const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?key=${this.apiKey}&playlistId=${playlistId}&maxResults=${limit}&part=snippet,contentDetails`,
+      `https://www.googleapis.com/youtube/v3/playlistItems?key=${this.apiKey}&playlistId=${playlistId}&maxResults=${limit}&part=snippet,contentDetails&order=date`,
     );
 
     if (!res.ok) {
@@ -55,6 +56,7 @@ export class YoutubeApi {
         description: item.snippet.description,
         thumbnail: item.snippet.thumbnails?.maxres?.url ?? item.snippet.thumbnails?.default?.url ?? "",
         position: item.snippet.position,
+        published_at: new Date(item.snippet.publishedAt).getTime(),
         playlist_id: item.snippet.playlistId,
         url: `https://youtu.be/${item.snippet.resourceId.videoId}`,
         shorts_url: `https://youtube.com/shorts/${item.snippet.resourceId.videoId}`,

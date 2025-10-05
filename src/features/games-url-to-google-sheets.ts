@@ -3,6 +3,7 @@ import { Boosty } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { GoogleSheets } from "../libs/google-sheets.ts";
 import { seconds } from "../utils.ts";
+import { YoutubeApi, type YoutubePlaylistVideoInfo } from "../libs/youtube-api.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -26,29 +27,9 @@ type Row = {
 };
 
 const googleSheets = new GoogleSheets(config.google_sheets.spreadsheet_id, config.google_sheets.sheet_id_games);
+const youtube = new YoutubeApi(config.youtube.apikey);
 
-async function getYoutubeVideos(): Promise<YoutubeVideo[]> {
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/playlistItems?key=${config.youtube.apikey}&part=snippet,contentDetails&playlistId=${config.youtube.upload_vods_playlist_id}&maxResults=50&order=date`,
-  );
-
-  const data = await res.json();
-
-  return data.items.map((item: any) => {
-    return {
-      id: item.contentDetails.videoId,
-      title: item.snippet.title,
-      description: item.snippet.description,
-      channel_id: item.snippet.channelId,
-      channel_title: item.snippet.channelTitle,
-      published_at: new Date(item.snippet.publishedAt).getTime(),
-      thumbnail: item.snippet.thumbnails.maxres.url,
-    } satisfies YoutubeVideo;
-  });
-}
-
-// Now returns Map<string, string[]>
-function dateToYoutubeVideoId(videos: YoutubeVideo[]): Map<string, string[]> {
+function dateToYoutubeVideoId(videos: YoutubePlaylistVideoInfo[]): Map<string, string[]> {
   const date_to_url_map = new Map<string, string[]>();
   for (const video of videos) {
     const date_of_stream = video.title.match(REGEX_DATE)?.[0];
@@ -144,13 +125,12 @@ function prepareUpdateRequests(
   return out;
 }
 
-export async function fillYoutubeGames(): Promise<void> {
-  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
-  const current_data = prepareCurrentData(last_50_rows);
+export async function fillYoutubeGames(current_data: Record<string, Row[]>): Promise<any[]> {
   const missed_youtube_dates = new Set(
     Object.values(current_data).flat().filter((item) => item && !item.youtube).map((item) => item && item.date),
   );
-  const youtube_videos = await getYoutubeVideos();
+
+  const youtube_videos = await youtube.getPlaylistItems(config.youtube.upload_vods_playlist_id);
   const date_to_youtube_ids = dateToYoutubeVideoId(youtube_videos);
 
   const youtube_ids_to_get_info = Array.from(missed_youtube_dates)
@@ -163,14 +143,11 @@ export async function fillYoutubeGames(): Promise<void> {
   );
 
   const youtube_requests = prepareUpdateRequests(youtube_timecodes_urls, current_data);
-  if (youtube_requests.length > 0) {
-    await googleSheets.batchRequest(youtube_requests);
-  }
+
+  return youtube_requests;
 }
 
-export async function fillBoostyGames(): Promise<void> {
-  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
-  const current_data = prepareCurrentData(last_50_rows);
+export async function fillBoostyGames(current_data: Record<string, Row[]>): Promise<any[]> {
   const date_to_boosty_url = await getBoostyPostDateToUrlMap();
   const requests = [];
   for (const row of Object.values(current_data).flat().filter((item) => item && !item.boosty)) {
@@ -184,7 +161,28 @@ export async function fillBoostyGames(): Promise<void> {
       ));
     }
   }
-  if (requests.length > 0) {
-    await googleSheets.batchRequest(requests);
+
+  return requests;
+}
+
+export async function fillGamesSheet(): Promise<void> {
+  console.log("Filling games sheet");
+  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
+  const current_data = prepareCurrentData(last_50_rows);
+
+  const [youtube_result, boosty_result] = await Promise.allSettled([
+    fillYoutubeGames(current_data),
+    fillBoostyGames(current_data),
+  ]);
+  const youtube_requests = youtube_result.status === "fulfilled" ? youtube_result.value : [];
+  const boosty_requests = boosty_result.status === "fulfilled" ? boosty_result.value : [];
+  if (youtube_requests.length === 0 && boosty_requests.length === 0) {
+    console.log("Nothing to update");
+    return;
   }
+  console.log("Youtube requests", youtube_requests.length);
+  console.log("Boosty requests", boosty_requests.length);
+
+  const requests = youtube_requests.concat(boosty_requests);
+  await googleSheets.batchRequest(requests);
 }

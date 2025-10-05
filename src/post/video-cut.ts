@@ -134,7 +134,7 @@ async function getDzenVideos(search?: string): Promise<DzenVideoInfo[]> {
 async function generatePostText(title: string, desc: string): Promise<string> {
   const prompt = config.llm.video_cut_prompt(title, desc);
 
-  const answer = await geminiThinking(prompt, "gemini-2.5-flash-preview-05-20").catch((err) => {
+  const answer = await geminiThinking(prompt, "gemini-2.5-flash").catch((err) => {
     console.error(err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });

@@ -5,6 +5,7 @@ import { Context, InputFile } from "@grammyjs/grammy";
 
 import { MultiSelectMenu } from "../telegram/multi-select-menu.ts";
 import { llmFallback } from "../libs/llm-fallback.ts";
+import { YoutubeApi } from "../libs/youtube-api.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -219,23 +220,8 @@ async function generateDescription(timecodes: string): Promise<string> {
 }
 
 async function getYoutubeVideos(search?: string): Promise<YoutubeVideo[]> {
-  const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/playlistItems?key=${config.youtube.apikey}&part=snippet,contentDetails&playlistId=${config.youtube.upload_vods_playlist_id}&maxResults=50&order=date`,
-  );
-
-  const data = await res.json();
-  // deno-lint-ignore no-explicit-any
-  const videos: YoutubeVideo[] = data.items.map((item: any) => {
-    return {
-      id: item.contentDetails.videoId,
-      title: item.snippet.title,
-      description: item.snippet.description,
-      channel_id: item.snippet.channelId,
-      channel_title: item.snippet.channelTitle,
-      published_at: new Date(item.snippet.publishedAt).getTime(),
-      thumbnail: item.snippet.thumbnails.maxres.url,
-    };
-  });
+  const youtube = new YoutubeApi(config.youtube.apikey);
+  const videos = await youtube.getPlaylistItems(config.youtube.upload_vods_playlist_id);
 
   if (videos.length === 0) {
     throw new Error("не удалось получить список видео");
