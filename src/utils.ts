@@ -1,4 +1,5 @@
 import { retry } from "@std/async/retry";
+import { brightCyan, brightMagenta, gray, red, yellow } from "@std/fmt/colors";
 
 export const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
 export async function getDb() {
@@ -68,3 +69,11 @@ export function fetchRetry(
     jitter: options?.jitter ?? 0,
   });
 }
+
+export const logger = {
+  log: (topic: string, ...data: unknown[]) => console.log(`[${brightCyan(topic)}]`, ...data),
+  warn: (topic: string, ...data: unknown[]) => console.warn(`[${yellow(topic)}]`, ...data),
+  info: (topic: string, ...data: unknown[]) => console.info(`[${brightMagenta(topic)}]`, ...data),
+  debug: (topic: string, ...data: unknown[]) => console.debug(`[${gray(topic)}]`, ...data),
+  error: (topic: string, ...data: unknown[]) => console.error(`[${red(topic)}]`, ...data),
+};

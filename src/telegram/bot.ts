@@ -7,6 +7,7 @@ import { youtubeVideoCut } from "../post/video-cut.ts";
 import { streamTimecodes } from "../features/timecodes.ts";
 import { shortsStats } from "../features/shorts-stat.ts";
 import { boostyBosts } from "../features/boosty-posts.ts";
+import { logger } from "../utils.ts";
 
 export const bot = new Bot(config.telegram.token);
 
@@ -14,7 +15,7 @@ bot.use(async (ctx, next) => {
   if (!ctx.hasChatType("private") || !config.admins.includes(ctx.from?.id ?? 0)) {
     await ctx.reply("нет доступа").catch(() => {});
   } else {
-    console.log(ctx.from?.id, ctx.message?.text);
+    logger.log("Telegram", ctx.from?.id, ctx.message?.text);
     await next();
   }
 });
@@ -49,4 +50,4 @@ bot.hears(/^(\/boosty|бусти|boosty)\s*(.+){0,1}/, async (ctx) => {
   await boostyBosts(ctx);
 });
 
-bot.catch(console.error);
+bot.catch((err) => logger.error("Telegram", err));

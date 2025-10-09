@@ -3,13 +3,14 @@ import { getState } from "../state.ts";
 import { config } from "../config.ts";
 import { addGameToGoogleSheet } from "../features/game-to-google-sheet.ts";
 import { NOT_GAME } from "./stream-update.ts";
+import { logger } from "../utils.ts";
 
 export async function streamStart(): Promise<void> {
   await using state = await getState();
 
   const twitch = new Twitch(config.twitch.channel);
   const info = await twitch.streamInfo().catch((error) => {
-    console.error("Timecodes Monitor: Twitch error, can't fetch stream info", error);
+    logger.error("Timecodes Monitor", "Twitch error, can't fetch stream info", error);
     Deno.exit(0);
   });
 
@@ -42,7 +43,7 @@ export async function streamStart(): Promise<void> {
     }
 
     addGameToGoogleSheet(info.category, info.category_id, first_game_in_day).catch((error) => {
-      console.error("Google Sheets: failed add game", error);
+      logger.error("Google Sheets", "failed add game", error);
     });
   }
 }

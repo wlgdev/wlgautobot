@@ -1,3 +1,5 @@
+import { logger } from "../utils.ts";
+
 async function wlgdlCall(): Promise<string> {
   const url = Deno.env.get("WLGDL");
   if (!url) return "Not endpoint set";
@@ -17,5 +19,5 @@ async function wlgdlCall(): Promise<string> {
 
 export async function wlgdlTrigger(): Promise<void> {
   const res = await wlgdlCall().catch((err) => `${err.message}`);
-  console.log(`WGLDL Trigger: ${res}`);
+  logger.log("WGLDL Trigger", res);
 }

@@ -4,6 +4,7 @@ import { geminiThinking } from "../libs/gemini.ts";
 import { Context } from "@grammyjs/grammy";
 import { VkVideoInfo } from "@shevernitskiy/scraperator";
 import { YoutubeApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
+import { logger } from "../utils.ts";
 
 export async function youtubeVideoCut(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -41,7 +42,7 @@ async function proccessYoutubeVideoCut(
   if (rutube_video.status === "fulfilled") {
     urls.push(["Rutube", rutube_video.value[0].url]);
   } else {
-    console.error(rutube_video.reason);
+    logger.error("Post VideoCut", rutube_video.reason);
   }
   if (dzen_video.status === "fulfilled") {
     urls.push(["Дзен", dzen_video.value[0].url]);
@@ -63,7 +64,7 @@ async function createPost(
 ) {
   const tg_message = config.telegram.template.video_cut(text, urls);
 
-  console.log("Post VideoCut", root_message_id[0], tg_message);
+  logger.log("Post VideoCut", root_message_id[0], tg_message);
 
   await ctx.api
     .sendMessage(root_message_id[0], tg_message, {
@@ -94,7 +95,7 @@ async function getYoutubeVideos(search?: string): Promise<YoutubeVideoInfo[]> {
 async function getVkVideos(search?: string): Promise<VkVideoInfo[]> {
   const vk = new Vk(config.vk.channel, config.proxy.cloudflare);
   const videos = await vk.getVideos().catch((err) => {
-    console.error(err);
+    logger.error("Post VideoCut", err);
     throw new Error("не удалось получить список видео vk");
   });
   const result = search ? videos.filter((item) => item.title.includes(search)) : videos;
@@ -107,7 +108,7 @@ async function getVkVideos(search?: string): Promise<VkVideoInfo[]> {
 async function getRutubeVideos(search?: string): Promise<RutubeVideoInfo[]> {
   const rutube = new Rutube(config.rutube.channel, undefined, config.proxy.cloudflare);
   const videos = await rutube.getVideos().catch((err) => {
-    console.error(err);
+    logger.error("Post VideoCut", err);
     throw new Error(err);
   });
   const result = search ? videos.filter((item) => item.title.includes(search)) : videos;
@@ -121,7 +122,7 @@ async function getRutubeVideos(search?: string): Promise<RutubeVideoInfo[]> {
 async function getDzenVideos(search?: string): Promise<DzenVideoInfo[]> {
   const dzen = new Dzen(config.dzen.channel);
   const videos = await dzen.getVideos().catch((err) => {
-    console.error(err);
+    logger.error("Post VideoCut", err);
     throw new Error("не удалось получить список видео dzen");
   });
   const result = search ? videos.items.filter((item) => item.title.includes(search)) : videos.items;
@@ -135,7 +136,7 @@ async function generatePostText(title: string, desc: string): Promise<string> {
   const prompt = config.llm.video_cut_prompt(title, desc);
 
   const answer = await geminiThinking(prompt, "gemini-2.5-flash").catch((err) => {
-    console.error(err);
+    logger.error("Post VideoCut", err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });
 

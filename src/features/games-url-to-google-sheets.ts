@@ -4,6 +4,7 @@ import { config } from "../config.ts";
 import { GoogleSheets } from "../libs/google-sheets.ts";
 import { seconds } from "../utils.ts";
 import { YoutubeApi, type YoutubePlaylistVideoInfo } from "../libs/youtube-api.ts";
+import { logger } from "../utils.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -166,7 +167,7 @@ export async function fillBoostyGames(current_data: Record<string, Row[]>): Prom
 }
 
 export async function fillGamesSheet(): Promise<void> {
-  console.log("Filling games sheet");
+  logger.log("Games Sheet", "Filling games sheet");
   const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
   const current_data = prepareCurrentData(last_50_rows);
 
@@ -177,11 +178,11 @@ export async function fillGamesSheet(): Promise<void> {
   const youtube_requests = youtube_result.status === "fulfilled" ? youtube_result.value : [];
   const boosty_requests = boosty_result.status === "fulfilled" ? boosty_result.value : [];
   if (youtube_requests.length === 0 && boosty_requests.length === 0) {
-    console.log("Nothing to update");
+    logger.log("Games Sheet", "Nothing to update");
     return;
   }
-  console.log("Youtube requests", youtube_requests.length);
-  console.log("Boosty requests", boosty_requests.length);
+  logger.log("Games Sheet", "Youtube requests", youtube_requests.length);
+  logger.log("Games Sheet", "Boosty requests", boosty_requests.length);
 
   const requests = youtube_requests.concat(boosty_requests);
   await googleSheets.batchRequest(requests);

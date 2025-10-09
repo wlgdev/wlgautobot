@@ -3,6 +3,7 @@ import { wlgdlTrigger } from "../libs/wlgdl-trigger.ts";
 import { streamStart } from "./stream-start.ts";
 import { streamUpdate } from "./stream-update.ts";
 import { streamEnd } from "./stream-end.ts";
+import { logger } from "../utils.ts";
 
 export async function twitchEventHandler(event: any): Promise<void> {
   switch (event.subscription.type) {
@@ -19,17 +20,17 @@ export async function twitchEventHandler(event: any): Promise<void> {
 }
 
 async function handleChannelUpdate({ event }: any): Promise<void> {
-  console.log("Twitch Stream update", event.title, event.category_name, event.category_id);
+  logger.log("Twitch", "Stream update", event.title, event.category_name, event.category_id);
   await streamUpdate(event.title, event.category_name, event.category_id);
 }
 async function handleStreamOnline({ event }: any): Promise<void> {
-  console.log("Twitch Stream online", event.broadcaster_user_id, event.login);
+  logger.log("Twitch", "Stream online", event.broadcaster_user_id, event.login);
   await Promise.allSettled([
     streamStart(),
     wlgdlTrigger(),
   ]);
 }
 async function handleStreamOffline({ event }: any): Promise<void> {
-  console.log("Twitch Stream offline", event.broadcaster_user_id, event.login);
+  logger.log("Twitch", "Stream offline", event.broadcaster_user_id, event.login);
   await streamEnd();
 }

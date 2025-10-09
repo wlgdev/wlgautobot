@@ -2,6 +2,7 @@
 import { Boosty, Twitch } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { GoogleSheets } from "../libs/google-sheets.ts";
+import { logger } from "../utils.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -117,10 +118,10 @@ export async function fillTwitchRecords() {
 
   const twitchVods = await getTwitchRecords(lastDate);
   if (twitchVods.length === 0) {
-    console.log("Twitch Records -", `Last date in a Record sheet is ${lastDate}, no new vods found after it`);
+    logger.log("Twitch Records", `Last date in a Record sheet is ${lastDate}, no new vods found after it`);
     return;
   } else {
-    console.log("Twitch Records -", `Last date in a Record sheet is ${lastDate}, found ${twitchVods.length} new vods`);
+    logger.log("Twitch Records", `Last date in a Record sheet is ${lastDate}, found ${twitchVods.length} new vods`);
   }
   const groupByDateTwitchVods = groupByDate(twitchVods);
   const groupdByDateTwitchVodsValues = Object.values(groupByDateTwitchVods);
@@ -209,10 +210,10 @@ function convertRecordToCellsRequests(
 export async function fillYoutubeRecords(currentTabledata: Row[]): Promise<any[]> {
   const missedDates = computeMissedYoutubeDates(currentTabledata);
   if (missedDates.size === 0) {
-    console.log("No missed dates for Youtube found in the Record sheet");
+    logger.log("Youtube Records", "No missed dates for Youtube found in the Record sheet");
     return [];
   } else {
-    console.log("Youtube Records -", `Found ${missedDates.size} missed dates`);
+    logger.log("Youtube Records", `Found ${missedDates.size} missed dates`);
   }
 
   const youtubeVideos = await getYoutubeVideos();
@@ -225,7 +226,7 @@ export async function fillYoutubeRecords(currentTabledata: Row[]): Promise<any[]
     GoogleSheets.GREY_BORDERS,
   );
   if (requests.length === 0) {
-    console.log("Youtube Records -", "No videos for missed dates found");
+    logger.log("Youtube Records", "No videos for missed dates found");
     return [];
   }
 
@@ -277,10 +278,10 @@ async function getBoostyPosts(): Promise<BoostyPost[]> {
 export async function fillBoostyRecords(currentTabledata: Row[]): Promise<any[]> {
   const missedDates = computeMissedBoostyDates(currentTabledata);
   if (missedDates.size === 0) {
-    console.log("No missed dates for Boosty found in the Record sheet");
+    logger.log("Boosty Records", "No missed dates for Boosty found in the Record sheet");
     return [];
   } else {
-    console.log("Boosty Records -", `Found ${missedDates.size} missed dates`);
+    logger.log("Boosty Records", `Found ${missedDates.size} missed dates`);
   }
 
   const boostyPosts = await getBoostyPosts();
@@ -293,7 +294,7 @@ export async function fillBoostyRecords(currentTabledata: Row[]): Promise<any[]>
     GoogleSheets.GREY_BORDERS,
   );
   if (requests.length === 0) {
-    console.log("Boosty Records -", "No posts for missed dates found");
+    logger.log("Boosty Records", "No posts for missed dates found");
     return [];
   }
 
@@ -301,7 +302,7 @@ export async function fillBoostyRecords(currentTabledata: Row[]): Promise<any[]>
 }
 
 export async function fillRecordsSheet(): Promise<void> {
-  console.log("Filling records sheet");
+  logger.log("Records Sheet", "Filling records sheet");
   await fillTwitchRecords();
 
   const currentTabledata = await getCurrentTableData();
@@ -313,11 +314,11 @@ export async function fillRecordsSheet(): Promise<void> {
   const youtubeRequests = youtubeResult.status === "fulfilled" ? youtubeResult.value : [];
   const boostyRequests = boostyResult.status === "fulfilled" ? boostyResult.value : [];
   if (youtubeRequests.length === 0 && boostyRequests.length === 0) {
-    console.log("Nothing to update");
+    logger.log("Records Sheet", "Nothing to update");
     return;
   }
-  console.log("Youtube requests", youtubeRequests.length);
-  console.log("Boosty requests", boostyRequests.length);
+  logger.log("Records Sheet", "Youtube requests", youtubeRequests.length);
+  logger.log("Records Sheet", "Boosty requests", boostyRequests.length);
 
   const requests = youtubeRequests.concat(boostyRequests);
   await googleSheets.batchRequest(requests);

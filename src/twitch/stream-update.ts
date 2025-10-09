@@ -1,7 +1,7 @@
 import { getState } from "../state.ts";
 import { addGameToGoogleSheet } from "../features/game-to-google-sheet.ts";
+import { logger } from "../utils.ts";
 
-let update_cycle = false;
 export const NOT_GAME = new Set([
   "Just Chatting",
   "Special Events",
@@ -11,16 +11,21 @@ export const NOT_GAME = new Set([
   "IRL",
 ]);
 
-export async function streamUpdate(title: string, category: string, category_id: string): Promise<void> {
-  if (update_cycle) return;
-  title = title.split("|")[0].replaceAll(/![а-яА-ЯёЁ\w\d]+/gu, "").trim();
-  update_cycle = true;
-  await using state = await getState();
+let curTitle: string;
+let curCategory: string;
 
-  if (!state.stream.online || (state.stream.title === title && state.stream.category === category)) {
-    update_cycle = false;
+export async function streamUpdate(title: string, category: string, category_id: string): Promise<void> {
+  if (curTitle === title && curCategory === category) {
+    logger.log("Timecodes Monitor", "stream update skipped", title, category);
     return;
   }
+  curTitle = title;
+  curCategory = category;
+
+  title = title.split("|")[0].replaceAll(/![а-яА-ЯёЁ\w\d]+/gu, "").trim();
+  await using state = await getState();
+
+  if (!state.stream.online) return;
 
   state.stream.history.push({
     title: title,
@@ -45,13 +50,12 @@ export async function streamUpdate(title: string, category: string, category_id:
     }
 
     addGameToGoogleSheet(category, category_id, first_game_in_day, state.stream.start_time).catch((error) => {
-      console.error("Google Sheets: failed add game", error);
+      logger.error("Google Sheets", "failed add game", error);
     });
   }
 
   state.stream.title = title;
   state.stream.category = category;
   state.stream.category_id = category_id;
-  console.log("Timecodes Monitor: stream updated", state.stream.title, state.stream.category);
-  update_cycle = false;
+  logger.log("Timecodes Monitor", "stream updated", state.stream.title, state.stream.category);
 }

@@ -6,6 +6,7 @@ import { Context, InputFile } from "@grammyjs/grammy";
 import { MultiSelectMenu } from "../telegram/multi-select-menu.ts";
 import { llmFallback } from "../libs/llm-fallback.ts";
 import { YoutubeApi } from "../libs/youtube-api.ts";
+import { logger } from "../utils.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -83,7 +84,7 @@ export async function proccessYoutubeStreamRecord(
     });
   } else {
     const ask = `для даты ${date_of_stream} найдено несколько видео на ютубе, выберите какие крепить в пост`;
-    console.log(ask);
+    logger.log("Post Record", ask);
     await yt_menu
       .setText(ask)
       .setOptions(videos.map((item) => `${item.title} [ytid] ${item.id}`))
@@ -110,7 +111,7 @@ async function getVodsForDate(
     const ask = `для даты ${date_of_stream} найдено несколько водов, выберите какие крепить в пост [ytid] ${
       youtube_ids.join(",")
     }`;
-    console.log(ask);
+    logger.log("Post Record", ask);
     await vods_menu
       .setText(ask)
       .setOptions(vods.map((item) => `${vod_name(item.title)} [vodid] ${item.id}`))
@@ -153,7 +154,7 @@ async function createPostForYoutubeIdWithVods(
       boosty_post.at(0)?.url,
     );
 
-    console.log("Post Record", ctx.chatId, tg_message);
+    logger.log("Post Record", ctx.chatId, tg_message);
 
     await ctx.api.sendPhoto(ctx.chatId!, new InputFile(new URL(video_info[0].preview_url)), {
       caption: tg_message,
@@ -212,7 +213,7 @@ async function generateDescription(timecodes: string): Promise<string> {
     [geminiThinking, "gemini-2.5-flash"],
     [gemini, "gemini-2.0-flash"],
   ]).catch((err) => {
-    console.error(err);
+    logger.error("Post Record", err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });
 
@@ -250,7 +251,7 @@ async function getBoostyPost(search?: string): Promise<BoostyBlogPost[]> {
   // TODO: remove if it will be possibleto fetch direct
   const boosty = new Boosty(config.boosty.channel, config.proxy.cloudflare);
   const posts = await boosty.getBlog().catch((err) => {
-    console.error(err);
+    logger.error("Post Record", err);
     return [];
   });
 
@@ -261,7 +262,7 @@ async function getVideoInfoById(id: string): Promise<YoutubeIdDetails[]> {
   const yt = new Youtube(config.youtube.channel_vod);
   let video_info = [
     await yt.getIdInfo(id).catch((err) => {
-      console.error(err);
+      logger.error("Post Record", err);
       throw new Error(`не удалось получить информацию о видео ${id}`);
     }),
   ];

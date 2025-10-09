@@ -1,6 +1,6 @@
 import { webhookCallback } from "@grammyjs/grammy";
 
-import { isDenoDeploy } from "./utils.ts";
+import { isDenoDeploy, logger } from "./utils.ts";
 import { Hono } from "@hono/hono";
 import { streamText } from "@hono/hono/streaming";
 import { scheduleStats } from "./features/shorts-stat.ts";
@@ -15,7 +15,6 @@ Deno.cron("shorts stats", "0 0 26 * *", async () => {
 });
 
 Deno.cron("fill games sheet", "0 7 * * *", async () => {
-  console.log("fill youtube games urls");
   await fillGamesSheet();
 });
 
@@ -43,7 +42,7 @@ if (!isDenoDeploy) {
     const message_type = c.req.header("Twitch-Eventsub-Message-Type");
     if (message_type === "webhook_callback_verification") {
       const data = await c.req.json();
-      console.log("Twitch webhook_callback_verification", data);
+      logger.log("Twitch", "webhook_callback_verification", data);
       return c.text(data.challenge);
     } else if (message_type === "notification") {
       const data = await c.req.json();
@@ -53,7 +52,7 @@ if (!isDenoDeploy) {
       });
     } else if (message_type === "revocation") {
       const data = await c.req.json();
-      console.log("Twitch revocation", data);
+      logger.log("Twitch", "revocation", data);
       return c.text("Ok");
     }
 

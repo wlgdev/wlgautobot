@@ -1,3 +1,5 @@
+import { logger } from "../utils.ts";
+
 export type LlmResponse = {
   provider: string;
   model: string;
@@ -13,7 +15,7 @@ export async function llmFallback(
       const response = await provider(prompt, model);
       return response;
     } catch (err) {
-      console.error(`[${model}] ${(err as Error).message}`);
+      logger.error("LLM Fallback", `[${model}] ${(err as Error).message}`);
     }
   }
 

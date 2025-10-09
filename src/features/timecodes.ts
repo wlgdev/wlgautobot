@@ -2,6 +2,7 @@ import { getState, type State, StreamHistoryEntry } from "../state.ts";
 import { duration } from "../utils.ts";
 import { Context } from "@grammyjs/grammy";
 import { bot } from "../telegram/bot.ts";
+import { logger } from "../utils.ts";
 
 export async function streamTimecodes(ctx: Context): Promise<void> {
   await using state = await getState();
@@ -38,7 +39,7 @@ export async function sendTimecodesMessage(
       { parse_mode: "HTML" },
     );
   })).catch((error) => {
-    console.error("Telegram failed send message", error);
+    logger.error("Timecodes", "Telegram failed send message", error);
   });
 }
 

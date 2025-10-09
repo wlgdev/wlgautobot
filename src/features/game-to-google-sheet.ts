@@ -1,6 +1,7 @@
 import { config } from "../config.ts";
 import { braveSearch } from "@shevernitskiy/scraperator";
 import { GoogleSheets } from "../libs/google-sheets.ts";
+import { logger } from "../utils.ts";
 
 export async function addGameToGoogleSheet(
   game: string,
@@ -9,20 +10,20 @@ export async function addGameToGoogleSheet(
   start_time?: number,
 ): Promise<void> {
   let game_url = await getGameSteamUrlByTwitchId(id).catch((error) => {
-    console.error("Cannot get steam url by tiwtch id", error);
+    logger.error("Game to GS", "Cannot get steam url by tiwtch id", error);
     return undefined;
   });
 
   if (!game_url) {
     game_url = await getGameSteamUrl(`steam ${game}`, /store\.steampowered\.com\/app\/(\d+)/).catch((error) => {
-      console.error("Cannot get steam game url", error);
+      logger.error("Game to GS", "Cannot get steam game url", error);
       return undefined;
     });
   }
 
   if (!game_url) {
     game_url = await getGameSteamUrl(`википедия ${game}`, /(ru|en)\.wikipedia\.org\/wiki\/(\w+)/).catch((error) => {
-      console.error("Cannot get wiki game url", error);
+      logger.error("Game to GS", "Cannot get wiki game url", error);
       return undefined;
     });
   }

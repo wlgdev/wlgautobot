@@ -5,6 +5,7 @@ import { stripHashtags, tsToString } from "../utils.ts";
 import { Context } from "@grammyjs/grammy";
 import { getTikTokUserVideo, TikTokVideoItem } from "../libs/tiktok.ts";
 import { YoutubeApi, type YoutubePlaylistVideoInfo } from "../libs/youtube-api.ts";
+import { logger } from "../utils.ts";
 
 export async function youtubeVkClip(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -14,7 +15,7 @@ export async function youtubeVkClip(ctx: Context): Promise<void> {
   try {
     const { text, url } = await processClip(search);
 
-    console.log("Post Clip", ctx.chat?.id, text, url);
+    logger.log("Post Clip", ctx.chat?.id, text, url);
 
     await ctx
       .reply(text, {
@@ -46,7 +47,7 @@ export async function processClip(search?: string): Promise<{ text: string; url:
     vk.getClips(50),
     getTikTokUserVideo(config.tiktok.channel, config.tiktok.rapidkey),
   ]).catch((err) => {
-    console.error(err);
+    logger.error("Post Clip", err);
     throw new Error("не удалось загрузить клипы/шортсы с вк и ютуба");
   });
 

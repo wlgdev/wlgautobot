@@ -10,6 +10,7 @@
     "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.69",
     "@grammyjs/grammy": "https://deno.land/x/grammy@v1.36.0/mod.ts",
     "@std/async": "jsr:@std/async@^1.0.14",
+    "@std/fmt": "jsr:@std/fmt@^1.0.8",
     "google-auth-library": "npm:google-auth-library@^9.15.1"
   },
   "fmt": {
@@ -21,5 +22,10 @@
     "exclude": ["**/node_modules"],
     "include": [],
     "entrypoint": "src\\main.ts"
+  },
+  "permissions": {
+    "default": {
+      "all": true
+    }
   }
 }

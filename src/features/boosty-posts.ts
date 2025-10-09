@@ -1,6 +1,7 @@
 import { Boosty } from "@shevernitskiy/scraperator";
 import { Context, InputFile } from "@grammyjs/grammy";
 import { config } from "../config.ts";
+import { logger } from "../utils.ts";
 
 const REGEX_DATE = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -28,7 +29,7 @@ export async function generateCSV(limit?: number): Promise<string[]> {
   // TODO: remove if it will be possibleto fetch direct
   const boosty = new Boosty(config.boosty.channel, "https://boostyflare.mahahuha5816.workers.dev/forward?url=");
   let posts = await boosty.getBlog(limit).catch((err) => {
-    console.error(err);
+    logger.error("Boosty", err);
     return [];
   });
   posts = posts.filter((post) => post.tags.includes("записи стримов"));

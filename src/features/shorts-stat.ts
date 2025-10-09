@@ -5,6 +5,7 @@ import { getTikTokUserVideo } from "../libs/tiktok.ts";
 import { getState } from "../state.ts";
 import { YoutubeApi } from "../libs/youtube-api.ts";
 import { GoogleSheets } from "../libs/google-sheets.ts";
+import { logger } from "../utils.ts";
 
 type StatsDataEntry = {
   date: string;
@@ -60,7 +61,7 @@ export async function shortsStats(ctx: Context): Promise<void> {
         await ctx.api.deleteMessage(ctx.chatId!, message_id);
       });
   } catch (err) {
-    console.error(err);
+    logger.error("Shorts Stat", err);
     await ctx.api.editMessageText(ctx.chatId!, message_id, `⛔ ${(err as Error).message}`).catch(() => {});
   }
 }
@@ -133,13 +134,13 @@ export async function generateCSV(limit?: string): Promise<string[]> {
 export async function scheduleStats(): Promise<void> {
   await using state = await getState();
   const data = await fetchShortStatsData(state.stats.last_title);
-  console.log("Short Stats schedule: fetched items", data.length);
+  logger.log("Shorts Stat", "schedule: fetched items", data.length);
   if (data.length === 0) return;
   state.stats.last_title = data[0].title;
   await insertFirstRowsRaw(data).catch((error) => {
-    console.error("Google Sheets error", error);
+    logger.error("Shorts Stat", "Google Sheets error", error);
   });
-  console.log("Short Stats schedule: inserted rows", data.length);
+  logger.log("Shorts Stat", "schedule: inserted rows", data.length);
 }
 
 async function insertFirstRowsRaw(rows: StatsDataEntry[]): Promise<void> {
