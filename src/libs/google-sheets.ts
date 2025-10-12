@@ -1,6 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 import { JWT } from "google-auth-library";
 import { config } from "../config.ts";
+import { logger } from "../utils.ts";
 
 const client = new JWT({
   email: config.google_sheets.email,
@@ -51,9 +52,9 @@ export class GoogleSheets {
     });
 
     if (res.status !== 200) {
-      console.error("Google Sheets Error inserting row -", res.status, res.data);
+      logger.error("Google Sheets", "Error inserting row", res.status, res.data);
     } else {
-      console.info("Google Sheets: inserted requests", requests.length);
+      logger.log("Google Sheets", "inserted requests", requests.length);
     }
   }
 
@@ -65,7 +66,7 @@ export class GoogleSheets {
         "Content-Type": "application/json",
       },
     }).catch((error) => {
-      console.error("Google Sheets Error getting cells range -", error);
+      logger.error("Google Sheets", "Error getting cells range", error);
       return { data: { values: [] } };
     });
     return res.data.values;

@@ -168,6 +168,9 @@ ${timecode}
     ddg: {
       key: Deno.env.get("DDG_RAPIDAPI_KEY")!,
     },
+    happy_api: {
+      secret: Deno.env.get("HAPPY_API_SECRET")!,
+    },
   };
 }
 
