@@ -107,12 +107,20 @@ function prepareUpdateRequests(
       const sheetGameName = row.game?.toLowerCase()?.trim();
       if (!sheetGameName) continue;
       let url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName}`);
+      // TODO: consider to iterate
       if (!url && sheetGameName.endsWith(" demo")) {
         url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -5)}`);
+      }
+      if (!url && sheetGameName.endsWith(" (demo)")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -7)}`);
       }
       if (!url && sheetGameName.endsWith(" playtest")) {
         url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -9)}`);
       }
+      if (!url && sheetGameName.endsWith(" (playtest)")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -11)}`);
+      }
+
       if (!url) continue;
 
       out.push(googleSheets.updateCellRequest(
