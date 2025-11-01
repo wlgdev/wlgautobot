@@ -1,10 +1,11 @@
 import { Dzen, type DzenVideoInfo, Rutube, type RutubeVideoInfo, Vk } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
-import { geminiThinking } from "../libs/gemini.ts";
 import { Context } from "@grammyjs/grammy";
 import { VkVideoInfo } from "@shevernitskiy/scraperator";
 import { YoutubeApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
 import { logger } from "../utils.ts";
+import { llmFallback } from "../libs/llm-fallback.ts";
+import { Gemini } from "@shevernitskiy/llm";
 
 export async function youtubeVideoCut(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -84,7 +85,8 @@ async function getYoutubeVideos(search?: string): Promise<YoutubeVideoInfo[]> {
     throw new Error("не удалось получить список видео youtube");
   }
 
-  const videos = await youtube.getVideos(lastVideos.map((item) => item.id));
+  let videos = await youtube.getVideos(lastVideos.map((item) => item.id));
+  videos = videos.filter((item) => item.duration > 200);
   const result = search ? videos.filter((item) => item.title.includes(search)) : videos;
   if (result.length === 0) {
     throw new Error("не удалось получить список видео youtube");
@@ -133,9 +135,15 @@ async function getDzenVideos(search?: string): Promise<DzenVideoInfo[]> {
 }
 
 async function generatePostText(title: string, desc: string): Promise<string> {
+  const geminiClient = new Gemini(config.llm.gemini.key);
+  const gemini = (...args: Parameters<typeof geminiClient.request>) => geminiClient.request(...args);
   const prompt = config.llm.video_cut_prompt(title, desc);
 
-  const answer = await geminiThinking(prompt, "gemini-2.5-flash").catch((err) => {
+  const answer = await llmFallback(prompt, [
+    [gemini, "gemini-2.5-pro"],
+    [gemini, "gemini-2.5-flash"],
+    [gemini, "gemini-2.0-flash"],
+  ]).catch((err) => {
     logger.error("Post VideoCut", err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });

@@ -34,20 +34,32 @@ export class YoutubeApi {
   constructor(private readonly apiKey: string) {}
 
   async getPlaylistItems(playlistId: string, limit = 50): Promise<YoutubePlaylistVideoInfo[]> {
-    const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?key=${this.apiKey}&playlistId=${playlistId}&maxResults=${limit}&part=snippet,contentDetails&order=date`,
-    );
+    let repeats = Math.ceil(limit / 50);
+    if (repeats < 1) repeats = 1;
 
-    if (!res.ok) {
-      throw new Error(
-        `Failed to fetch data from Youtube API ${res.body ? await res.text() : ""}`,
+    let nextPageToken = "";
+    let items = [];
+
+    for (let i = 0; i < repeats; i++) {
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/playlistItems?key=${this.apiKey}&playlistId=${playlistId}&maxResults=${limit}&part=snippet,contentDetails&order=date${
+          nextPageToken ? `&pageToken=${nextPageToken}` : ""
+        }`,
       );
+      if (!res.ok) {
+        throw new Error(
+          `Failed to fetch data from Youtube API ${res.body ? await res.text() : ""}`,
+        );
+      }
+      const data = await res.json();
+      // deno-lint-ignore no-explicit-any
+      items = [...items, ...data.items] as any;
+      nextPageToken = data.nextPageToken ?? null;
+      if (!nextPageToken) break;
     }
 
-    const data = await res.json();
-
     // deno-lint-ignore no-explicit-any
-    return data.items.map((item: any) => {
+    return items.map((item: any) => {
       return {
         id: item.snippet.resourceId.videoId,
         title: item.snippet.title,

@@ -1,8 +1,7 @@
 import { Boosty, BoostyBlogPost, Twitch, TwitchVodInfo, Youtube, YoutubeIdDetails } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
-import { gemini, geminiThinking } from "../libs/gemini.ts";
+import { Gemini } from "@shevernitskiy/llm";
 import { Context, InputFile } from "@grammyjs/grammy";
-
 import { MultiSelectMenu } from "../telegram/multi-select-menu.ts";
 import { llmFallback } from "../libs/llm-fallback.ts";
 import { YoutubeApi } from "../libs/youtube-api.ts";
@@ -207,10 +206,13 @@ function getStreamPartsWithIds(
 }
 
 async function generateDescription(timecodes: string): Promise<string> {
+  const geminiClient = new Gemini(config.llm.gemini.key);
+  const gemini = (...args: Parameters<typeof geminiClient.request>) => geminiClient.request(...args);
   const prompt = config.llm.stream_record_prompt(timecodes);
 
   const answer = await llmFallback(prompt, [
-    [geminiThinking, "gemini-2.5-flash"],
+    [gemini, "gemini-2.5-pro"],
+    [gemini, "gemini-2.5-flash"],
     [gemini, "gemini-2.0-flash"],
   ]).catch((err) => {
     logger.error("Post Record", err);

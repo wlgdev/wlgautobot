@@ -9,6 +9,8 @@ export const NOT_GAME = new Set([
   "No Category",
   "I'm Only Sleeping",
   "IRL",
+  "Pools, Hot Tubs, and Beaches",
+  "",
 ]);
 
 let curTitle: string;

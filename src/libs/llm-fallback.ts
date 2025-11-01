@@ -8,11 +8,13 @@ export type LlmResponse = {
 
 export async function llmFallback(
   prompt: string,
-  providers: [(prompt: string, model: string) => Promise<string>, string][],
+  // FIXME: fix types
+  // deno-lint-ignore no-explicit-any
+  providers: [(prompt: string, model: any, ...args: any[]) => Promise<string>, string, ...any][],
 ): Promise<string> {
-  for (const [provider, model] of providers) {
+  for (const [provider, model, ...args] of providers) {
     try {
-      const response = await provider(prompt, model);
+      const response = await provider(prompt, model, ...args);
       return response;
     } catch (err) {
       logger.error("LLM Fallback", `[${model}] ${(err as Error).message}`);
