@@ -1,9 +1,8 @@
 import { Boosty, BoostyBlogPost, Twitch, TwitchVodInfo, Youtube, YoutubeIdDetails } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
-import { Gemini } from "@shevernitskiy/llm";
+import { Gemini, llmFallback } from "@shevernitskiy/llm";
 import { Context, InputFile } from "@grammyjs/grammy";
 import { MultiSelectMenu } from "../telegram/multi-select-menu.ts";
-import { llmFallback } from "../libs/llm-fallback.ts";
 import { YoutubeApi } from "../libs/youtube-api.ts";
 import { logger } from "../utils.ts";
 
@@ -206,8 +205,7 @@ function getStreamPartsWithIds(
 }
 
 async function generateDescription(timecodes: string): Promise<string> {
-  const geminiClient = new Gemini(config.llm.gemini.key);
-  const gemini = (...args: Parameters<typeof geminiClient.request>) => geminiClient.request(...args);
+  const gemini = new Gemini(config.llm.gemini.key);
   const prompt = config.llm.stream_record_prompt(timecodes);
 
   const answer = await llmFallback(prompt, [

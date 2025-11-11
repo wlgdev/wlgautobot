@@ -4,8 +4,7 @@ import { Context } from "@grammyjs/grammy";
 import { VkVideoInfo } from "@shevernitskiy/scraperator";
 import { YoutubeApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
 import { logger } from "../utils.ts";
-import { llmFallback } from "../libs/llm-fallback.ts";
-import { Gemini } from "@shevernitskiy/llm";
+import { Gemini, llmFallback } from "@shevernitskiy/llm";
 
 export async function youtubeVideoCut(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -135,8 +134,7 @@ async function getDzenVideos(search?: string): Promise<DzenVideoInfo[]> {
 }
 
 async function generatePostText(title: string, desc: string): Promise<string> {
-  const geminiClient = new Gemini(config.llm.gemini.key);
-  const gemini = (...args: Parameters<typeof geminiClient.request>) => geminiClient.request(...args);
+  const gemini = new Gemini(config.llm.gemini.key);
   const prompt = config.llm.video_cut_prompt(title, desc);
 
   const answer = await llmFallback(prompt, [

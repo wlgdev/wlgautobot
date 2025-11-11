@@ -6,8 +6,8 @@
   },
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.9.4",
-    "@shevernitskiy/llm": "jsr:@shevernitskiy/llm@^0.0.1",
-    "@shevernitskiy/proxify": "jsr:@shevernitskiy/proxify@^0.0.9",
+    "@shevernitskiy/llm": "jsr:@shevernitskiy/llm@^0.0.3",
+    "@shevernitskiy/proxify": "jsr:@shevernitskiy/proxify@^0.1.3",
     "@shevernitskiy/scraperator": "jsr:@shevernitskiy/scraperator@^0.0.69",
     "@grammyjs/grammy": "https://deno.land/x/grammy@v1.36.0/mod.ts",
     "@std/async": "jsr:@std/async@^1.0.14",

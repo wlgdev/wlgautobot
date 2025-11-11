@@ -25,12 +25,12 @@ Deno.cron("fill records sheet", "10 7 * * *", async () => {
 if (!isDenoDeploy) {
   await bot.start();
 } else {
-  const server = new Hono();
+  const app = new Hono();
   const handler = webhookCallback(bot, "std/http", { timeoutMilliseconds: 30000 });
 
-  server.get("/", (c) => c.text("Ok"));
+  app.get("/", (c) => c.text("Ok"));
 
-  server.post("/telegram", (c) => {
+  app.post("/telegram", (c) => {
     return streamText(c, async (stream) => {
       await stream.writeln("Ok");
       await stream.close();
@@ -38,7 +38,7 @@ if (!isDenoDeploy) {
     });
   });
 
-  server.post("/twitch", async (c) => {
+  app.post("/twitch", async (c) => {
     const message_type = c.req.header("Twitch-Eventsub-Message-Type");
     if (message_type === "webhook_callback_verification") {
       const data = await c.req.json();
@@ -59,7 +59,7 @@ if (!isDenoDeploy) {
     return c.text("Ok");
   });
 
-  server.get("/stream", async (c) => {
+  app.get("/stream", async (c) => {
     if (c.req.query("title") === "") {
       return c.text(await getLastStreamTitle());
     } else {
@@ -67,5 +67,5 @@ if (!isDenoDeploy) {
     }
   });
 
-  Deno.serve({ port: 8080, onListen: () => {} }, server.fetch);
+  Deno.serve({ port: 8080, onListen: () => {} }, app.fetch);
 }

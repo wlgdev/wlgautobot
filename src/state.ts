@@ -1,4 +1,4 @@
-import { proxify } from "@shevernitskiy/proxify";
+import { type Mutatable, MUTATED, proxify } from "@shevernitskiy/proxify";
 
 export type StreamHistoryEntry = {
   title: string;
@@ -25,17 +25,17 @@ export const default_state = {
   google_sheets: {
     last_date: "23.07.2025",
   },
-  [proxify.is_mutated]: true,
+  [MUTATED]: true,
 };
 
-export async function getState(): Promise<typeof default_state & { [Symbol.asyncDispose]: () => Promise<void> }> {
+export async function getState(): Promise<Mutatable<typeof default_state>> {
   const db = await Deno.openKv(Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined ? undefined : "kv.db");
   const state = (await db.get<typeof default_state>(["state"])).value ?? default_state;
 
   return proxify(state, async () => {
-    if (state[proxify.is_mutated]) {
+    if (state[MUTATED]) {
       console.debug("saving state");
-      state[proxify.is_mutated] = false;
+      state[MUTATED] = false;
       await db.set(["state"], state);
     }
     db.close();
