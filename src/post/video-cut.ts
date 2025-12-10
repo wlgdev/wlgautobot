@@ -4,7 +4,7 @@ import { Context } from "@grammyjs/grammy";
 import { VkVideoInfo } from "@shevernitskiy/scraperator";
 import { YoutubeApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
 import { logger } from "../utils.ts";
-import { Gemini, llmFallback } from "@shevernitskiy/llm";
+import { llmFallback, Pollinations } from "@shevernitskiy/llm";
 
 export async function youtubeVideoCut(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -134,13 +134,13 @@ async function getDzenVideos(search?: string): Promise<DzenVideoInfo[]> {
 }
 
 async function generatePostText(title: string, desc: string): Promise<string> {
-  const gemini = new Gemini(config.llm.gemini.key);
+  const pollinations = new Pollinations();
+  // const gemini = new Gemini(config.llm.gemini.key);
   const prompt = config.llm.video_cut_prompt(title, desc);
 
   const answer = await llmFallback(prompt, [
-    [gemini, "gemini-2.5-pro"],
-    [gemini, "gemini-2.5-flash"],
-    [gemini, "gemini-2.0-flash"],
+    [pollinations, "gemini"],
+    [pollinations, "deepseek"],
   ]).catch((err) => {
     logger.error("Post VideoCut", err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");

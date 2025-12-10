@@ -1,6 +1,6 @@
 import { Boosty, BoostyBlogPost, Twitch, TwitchVodInfo, Youtube, YoutubeIdDetails } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
-import { Gemini, llmFallback } from "@shevernitskiy/llm";
+import { llmFallback, Pollinations } from "@shevernitskiy/llm";
 import { Context, InputFile } from "@grammyjs/grammy";
 import { MultiSelectMenu } from "../telegram/multi-select-menu.ts";
 import { YoutubeApi } from "../libs/youtube-api.ts";
@@ -205,13 +205,13 @@ function getStreamPartsWithIds(
 }
 
 async function generateDescription(timecodes: string): Promise<string> {
-  const gemini = new Gemini(config.llm.gemini.key);
+  const pollinations = new Pollinations();
+  // const gemini = new Gemini(config.llm.gemini.key);
   const prompt = config.llm.stream_record_prompt(timecodes);
 
   const answer = await llmFallback(prompt, [
-    [gemini, "gemini-2.5-pro"],
-    [gemini, "gemini-2.5-flash"],
-    [gemini, "gemini-2.0-flash"],
+    [pollinations, "gemini"],
+    [pollinations, "deepseek"],
   ]).catch((err) => {
     logger.error("Post Record", err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
