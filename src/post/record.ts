@@ -255,7 +255,7 @@ async function getBoostyPost(search?: string): Promise<BoostyBlogPost[]> {
     return [];
   });
 
-  return search ? posts.filter((item) => item.title.includes(search)) : posts;
+  return search ? posts.filter((item) => item.title?.includes(search)) : posts;
 }
 
 async function getVideoInfoById(id: string): Promise<YoutubeIdDetails[]> {
