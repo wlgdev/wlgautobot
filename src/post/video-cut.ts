@@ -4,7 +4,7 @@ import { Context } from "@grammyjs/grammy";
 import { VkVideoInfo } from "@shevernitskiy/scraperator";
 import { YoutubeApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
 import { logger } from "../utils.ts";
-import { llmFallback, Pollinations } from "@shevernitskiy/llm";
+import { Gemini, llmFallback } from "@shevernitskiy/llm";
 
 export async function youtubeVideoCut(ctx: Context): Promise<void> {
   const search = ctx.match?.at(2);
@@ -94,7 +94,7 @@ async function getYoutubeVideos(search?: string): Promise<YoutubeVideoInfo[]> {
 }
 
 async function getVkVideos(search?: string): Promise<VkVideoInfo[]> {
-  const vk = new Vk(config.vk.channel, config.proxy.cloudflare);
+  const vk = new Vk(config.vk.channel);
   const videos = await vk.getVideos().catch((err) => {
     logger.error("Post VideoCut", err);
     throw new Error("не удалось получить список видео vk");
@@ -107,14 +107,14 @@ async function getVkVideos(search?: string): Promise<VkVideoInfo[]> {
 }
 
 async function getRutubeVideos(search?: string): Promise<RutubeVideoInfo[]> {
-  const rutube = new Rutube(config.rutube.channel, undefined, config.proxy.cloudflare);
+  const rutube = new Rutube(config.rutube.channel, config.rutube.channel_id, config.proxy.cloudflare);
   const videos = await rutube.getVideos().catch((err) => {
     logger.error("Post VideoCut", err);
     throw new Error(err);
   });
   const result = search ? videos.filter((item) => item.title.includes(search)) : videos;
   if (result.length === 0) {
-    throw new Error("не удалось получить список видео rutube");
+    throw new Error("результат поиска пуст");
   }
 
   return result;
@@ -134,19 +134,21 @@ async function getDzenVideos(search?: string): Promise<DzenVideoInfo[]> {
 }
 
 async function generatePostText(title: string, desc: string): Promise<string> {
-  const pollinations = new Pollinations();
-  // const gemini = new Gemini(config.llm.gemini.key);
+  // const pollinations = new Pollinations();
+  const gemini = new Gemini(config.llm.gemini.key);
   const prompt = config.llm.video_cut_prompt(title, desc);
 
   const answer = await llmFallback(prompt, [
-    [pollinations, "gemini"],
-    [pollinations, "deepseek"],
+    [gemini, "gemini-2.5-flash-lite"],
   ]).catch((err) => {
     logger.error("Post VideoCut", err);
     throw new Error("не удалось сгенерить описание, ошибка обращения к AI");
   });
 
-  return answer.replaceAll("с зрителями", "со зрителями").replace("</result>", "").replace("<result>", "").trim();
+  return answer.replaceAll("с зрителями", "со зрителями").replace("</result>", "").replace("<result>", "").replaceAll(
+    "*",
+    "",
+  ).trim();
 }
 
 function getDescFromDescription(text: string): string {

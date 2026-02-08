@@ -260,7 +260,7 @@ type BoostyPost = {
 async function getBoostyPosts(): Promise<BoostyPost[]> {
   const boosty = new Boosty(config.boosty.channel, config.proxy.cloudflare);
   let posts = await boosty.getBlog(50);
-  posts = posts.filter((post) => post.title.match(REGEX_DATE));
+  posts = posts.filter((post) => post.title?.match(REGEX_DATE));
 
   return posts.map((item) => {
     const date = REGEX_DATE.exec(item.title)?.[1];
@@ -307,19 +307,18 @@ export async function fillRecordsSheet(): Promise<void> {
 
   const currentTabledata = await getCurrentTableData();
 
-  const [youtubeResult, boostyResult] = await Promise.allSettled([
+  const [youtubeResult, boostyResult] = await Promise.all([
     fillYoutubeRecords(currentTabledata),
     fillBoostyRecords(currentTabledata),
   ]);
-  const youtubeRequests = youtubeResult.status === "fulfilled" ? youtubeResult.value : [];
-  const boostyRequests = boostyResult.status === "fulfilled" ? boostyResult.value : [];
-  if (youtubeRequests.length === 0 && boostyRequests.length === 0) {
+
+  if (youtubeResult.length === 0 && boostyResult.length === 0) {
     logger.log("Records Sheet", "Nothing to update");
     return;
   }
-  logger.log("Records Sheet", "Youtube requests", youtubeRequests.length);
-  logger.log("Records Sheet", "Boosty requests", boostyRequests.length);
+  logger.log("Records Sheet", "Youtube requests", youtubeResult.length);
+  logger.log("Records Sheet", "Boosty requests", boostyResult.length);
 
-  const requests = youtubeRequests.concat(boostyRequests);
+  const requests = youtubeResult.concat(boostyResult);
   await googleSheets.batchRequest(requests);
 }

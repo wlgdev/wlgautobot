@@ -67,5 +67,14 @@ if (!isDenoDeploy) {
     }
   });
 
+  app.all("/auth", (c) => {
+    const code = c.req.query("code");
+    if (code) {
+      return c.text(`OK, code ${code}`);
+    } else {
+      return c.text("Error");
+    }
+  });
+
   Deno.serve({ port: 8080, onListen: () => {} }, app.fetch);
 }

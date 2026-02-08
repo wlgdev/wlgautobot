@@ -75,6 +75,7 @@ export function getConfig() {
     },
     rutube: {
       channel: Deno.env.get("RUTUBE_CHANNEL")!,
+      channel_id: +Deno.env.get("RUTUBE_CHANNEL_ID")!,
     },
     dzen: {
       channel: Deno.env.get("DZEN_CHANNEL")!,
