@@ -1,5 +1,5 @@
 .env
 .vscode
-kv.db
+kv*.db*
 
 src/run.ts

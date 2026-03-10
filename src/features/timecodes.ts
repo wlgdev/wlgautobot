@@ -47,7 +47,11 @@ function printTimecodes(history: StreamHistoryEntry[]): string {
   const out: string[] = [];
   for (const item of history) {
     const time = duration(Math.round(item.offset / 1000));
-    out.push(`${time} – ${item.title}${item.category ? ", " + item.category : ""}`);
+    out.push(
+      `${time} – ${item.title.replaceAll("\u003C", "").replaceAll("\u003E", "")}${
+        item.category ? ", " + item.category : ""
+      }`,
+    );
   }
   return out.join("\n");
 }

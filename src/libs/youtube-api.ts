@@ -113,6 +113,31 @@ export class YoutubeApi {
     });
   }
 
+  async getLatestVideos(
+    playlistId: string,
+    filter: "shorts" | "videos" | "all" = "all",
+  ): Promise<YoutubeVideoInfo[]> {
+    const playlistItems = await this.getPlaylistItems(playlistId, 50);
+
+    if (playlistItems.length === 0) {
+      return [];
+    }
+
+    const ids = playlistItems.map((item) => item.id);
+    const videos = await this.getVideos(ids);
+
+    return videos.filter((video) => {
+      const isDurationShort = video.duration > 0 && video.duration <= 65;
+      const hasShortSign = /[#]/.test(video.title) || /shorts/i.test(video.title);
+      const isExtendedShort = video.duration <= 180 && hasShortSign;
+      const isShort = isDurationShort || isExtendedShort;
+
+      if (filter === "shorts") return isShort;
+      if (filter === "videos") return !isShort;
+      return true;
+    });
+  }
+
   // deno-lint-ignore no-explicit-any
   async getPlaylistIds(channelId: string): Promise<any> {
     const res = await fetch(

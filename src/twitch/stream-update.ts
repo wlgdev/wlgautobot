@@ -46,7 +46,7 @@ export async function streamUpdate(title: string, category: string, category_id:
     const date = new Date().toLocaleDateString("ru-RU");
     let first_game_in_day = false;
 
-    if (state.google_sheets.last_date !== date) {
+    if (state.google_sheets?.last_date !== date) {
       state.google_sheets.last_date = date;
       first_game_in_day = true;
     }

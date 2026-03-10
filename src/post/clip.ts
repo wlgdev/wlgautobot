@@ -4,7 +4,7 @@ import { config } from "../config.ts";
 import { stripHashtags, tsToString } from "../utils.ts";
 import { Context } from "@grammyjs/grammy";
 import { getTikTokUserVideo, TikTokVideoItem } from "../libs/tiktok.ts";
-import { YoutubeApi, type YoutubePlaylistVideoInfo } from "../libs/youtube-api.ts";
+import { YoutubeApi, YoutubeVideoInfo } from "../libs/youtube-api.ts";
 import { logger } from "../utils.ts";
 
 export async function youtubeVkClip(ctx: Context): Promise<void> {
@@ -33,7 +33,7 @@ export async function youtubeVkClip(ctx: Context): Promise<void> {
 
 export type EntryItem = {
   key: string;
-  youtube?: YoutubePlaylistVideoInfo;
+  youtube?: YoutubeVideoInfo;
   vk?: VkVideoInfo;
   tiktok?: TikTokVideoItem;
 };
@@ -43,7 +43,7 @@ export async function processClip(search?: string): Promise<{ text: string; url:
   const youtube = new YoutubeApi(config.youtube.apikey);
 
   const [yt_res, vk_res, tt_res] = await Promise.all([
-    youtube.getPlaylistItems(config.youtube.shorts_playlist_id, 50),
+    youtube.getLatestVideos(config.youtube.upload_playlist_id, "shorts"),
     vk.getClips(50),
     getTikTokUserVideo(config.tiktok.channel, config.tiktok.rapidkey),
   ]).catch((err) => {
@@ -91,7 +91,7 @@ export async function processClip(search?: string): Promise<{ text: string; url:
 }
 
 export function recentClips(
-  youtube: YoutubePlaylistVideoInfo[],
+  youtube: YoutubeVideoInfo[],
   vk: VkVideoInfo[],
   tiktok: TikTokVideoItem[],
 ): EntryItem[] {
