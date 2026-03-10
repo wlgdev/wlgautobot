@@ -166,9 +166,6 @@ ${timecode}
     proxy: {
       cloudflare: Deno.env.get("PROXY_CLOUDFLARE")!,
     },
-    ddg: {
-      key: Deno.env.get("DDG_RAPIDAPI_KEY")!,
-    },
     happy_api: {
       secret: Deno.env.get("HAPPY_API_SECRET")!,
     },
