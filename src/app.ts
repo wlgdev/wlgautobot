@@ -1,6 +1,6 @@
 import { webhookCallback } from "@grammyjs/grammy";
 
-import { isDenoDeploy, logger } from "./utils.ts";
+import { getDb, isDenoDeploy, logger } from "./utils.ts";
 import { Hono } from "@hono/hono";
 import { streamText } from "@hono/hono/streaming";
 import { createMiddleware } from "@hono/hono/factory";
@@ -85,4 +85,11 @@ app.get("/fillGamesSheet", isAdminMiddleware, async (c) => {
 app.get("/state", isAdminMiddleware, async (c) => {
   await using state = await getState();
   return c.json(state);
+});
+
+app.post("/state", isAdminMiddleware, async (c) => {
+  const body = await c.req.json();
+  const { db } = await getDb();
+  await db.set(["state"], body);
+  return c.text("Ok");
 });
