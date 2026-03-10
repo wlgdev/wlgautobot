@@ -18,12 +18,6 @@
     "lineWidth": 120
   },
   "exclude": [".env", "./.vscode", "run.ts", "kv.db"],
-  "deploy": {
-    "project": "43b87bbc-a62d-4c33-aa9a-a4c23d2a074a",
-    "exclude": ["**/node_modules"],
-    "include": [],
-    "entrypoint": "src\\main.ts"
-  },
   "permissions": {
     "default": {
       "all": true
