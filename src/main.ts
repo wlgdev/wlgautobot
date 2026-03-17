@@ -23,13 +23,6 @@ Deno.cron("fill records sheet", "10 7 * * *", async () => {
   }
 });
 
-Deno.cron("test", "26 7 * * *", () => {
-  console.log("CRON", Deno.env.get("DENO_TIMELINE"));
-  if (Deno.env.get("DENO_TIMELINE") === "production") {
-    console.log("WE HERE");
-  }
-});
-
 Deno.serve({
   port: 6969,
   onListen: () => {},
