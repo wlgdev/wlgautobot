@@ -53,6 +53,34 @@ export function getConfig() {
           message.push("\n#запись #twitch #youtube");
           return message.join("\n");
         },
+        record_vk: (text: string, vk_urls: string[], twitch_urls: string[], boosty_url?: string) => {
+          const boosty_link = boosty_url ? ` и <a href="${boosty_url}">Boosty</a>` : "";
+
+          const message = [
+            vk_urls.length === 1 ? text.replace("VK", `<a href="${vk_urls[0]}">VK</a>`) : text,
+          ];
+          if (vk_urls.length > 1) {
+            message.push(
+              "\n" + vk_urls.map((url, index) => `⦁ <a href="${url}">Часть ${index + 1}</a>`).join("\n"),
+            );
+          }
+          if (twitch_urls.length === 1) {
+            message.push(
+              `\nЗапись также доступна на <a href="${
+                twitch_urls[0]
+              }">Twitch</a>${boosty_link} для платных подписчиков.`,
+            );
+          } else if (twitch_urls.length > 1) {
+            message.push(`\nЗапись также доступна на Twitch${boosty_link} для платных подписчиков.`);
+            message.push(
+              "\n" + twitch_urls.map((url, index) => `⦁ <a href="${url}">Часть ${index + 1}</a>`).join("\n"),
+            );
+          } else if (boosty_url && twitch_urls.length === 0) {
+            message.push(`\nЗапись также доступна на <a href="${boosty_url}">Boosty</a> для платных подписчиков.`);
+          }
+          message.push("\n#запись #twitch #vk");
+          return message.join("\n");
+        },
         video_cut: (text: string, urls: [string, string][]) => {
           const wrapped = urls.map(([title, url]) => `<a href="${url}">${title}</a>`);
           let sources = wrapped[0];
@@ -126,14 +154,43 @@ Cгенери описание 'что мы делали на стриме' ос
 </result>
 </example>
 
-Вот таймлайн, на основе которого нужно сгенерить описание:
-<timecodes>
-${timecode}
-</timecodes>`,
+  Вот таймлайн, на основе которого нужно сгенерить описание:
+  <timecodes>
+  ${timecode}
+  </timecodes>`,
+      stream_record_prompt_vk: (timecode: string) =>
+        `<task>
+ Cгенери описание 'что мы делали на стриме' основываясь на таймлайне.
+ Если в таймкоде присутствует название игры, добавь небольшое творческое описание этого пункта основываясь на содержании игры.
+ Таймкоды с обычным общением и неключевыми событиями можешь пропустить.
+ </task>
+ <constraints>
+ Ответь только самим текстом описания и обязательно сохрани слово VK. Начинай словами "Запись стрима, на котором мы". Не отвечай списком.
+ В ответе употребляй выражение "VK канал", а не "VK сообщество".
+ </constraints>
+
+ <example>
+ <timecodes>
+ 00:00:00 – Заставка
+ 00:01:29 – Начало стрима. Общение
+ 01:27:15 – Grand Theft Auto V Enhanced
+ 03:25:13 – Project Castaway
+ 05:02:46 – Unreal Gold
+ 06:05:03 – DARK SOULS III
+ </timecodes>
+ <result>
+ Запись стрима, на котором мы угоняли тачки и устраивали беспредел в Grand Theft Auto V Enhanced, выживали на необитаемом острове в Project Castaway, вспомнили классику в Unreal Gold, а затем отправились страдать в DARK SOULS III, доступна в нашем VK канале.
+ </result>
+ </example>
+
+ Вот таймлайн, на основе которого нужно сгенерить описание:
+ <timecodes>
+ ${timecode}
+ </timecodes>`,
       video_cut_prompt: (title: string, desc: string) =>
         `<task>
-Сделать описание видео основываясь на его названии и кратком содержании.
-</task>
+ Сделать описание видео основываясь на его названии и кратком содержании.
+ </task>
 <constraints>
 Ответить только описанием без лишних слов. Ответ должен быть БЕЗ тэгов.
 </constraints>

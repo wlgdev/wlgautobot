@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Boosty } from "@shevernitskiy/scraperator";
+import { Boosty, Vk, VkVideoInfo } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { GoogleSheets } from "../libs/google-sheets.ts";
 import { seconds } from "../utils.ts";
@@ -24,6 +24,7 @@ type Row = {
   game: any;
   youtube: any;
   boosty: any;
+  vk: any;
   is_last_for_date: boolean;
 };
 
@@ -32,6 +33,20 @@ const youtube = new YoutubeApi(config.youtube.apikey);
 
 function dateToYoutubeVideoId(videos: YoutubePlaylistVideoInfo[]): Map<string, string[]> {
   const date_to_url_map = new Map<string, string[]>();
+  for (const video of videos) {
+    const date_of_stream = video.title.match(REGEX_DATE)?.[0];
+    if (date_of_stream) {
+      if (!date_to_url_map.has(date_of_stream)) {
+        date_to_url_map.set(date_of_stream, []);
+      }
+      date_to_url_map.get(date_of_stream)!.push(video.id);
+    }
+  }
+  return date_to_url_map;
+}
+
+function dateToVkVideoId(videos: VkVideoInfo[]): Map<string, number[]> {
+  const date_to_url_map = new Map<string, number[]>();
   for (const video of videos) {
     const date_of_stream = video.title.match(REGEX_DATE)?.[0];
     if (date_of_stream) {
@@ -65,6 +80,7 @@ function prepareCurrentData(rows: any[]): Record<any, Row[]> {
     game: row[1],
     youtube: row.at(4),
     boosty: row.at(5),
+    vk: row.at(6),
     is_last_for_date: false,
   }));
 
@@ -96,7 +112,27 @@ function proccessYoutubeVideos(videos: YoutubeVideo[]): Map<string, string> {
   return out;
 }
 
-function prepareUpdateRequests(
+function proccessVkVideos(videos: VkVideoInfo[]): Map<string, string> {
+  const out = new Map<string, string>();
+
+  for (const video of videos) {
+    const date_of_stream = video.title.match(REGEX_DATE)?.[0];
+    if (!date_of_stream) continue;
+    for (const timecode of video.description.matchAll(/(\d+):(\d+):(\d+)\s{0,1}–\s{0,1}(.+)/g)) {
+      const hours = timecode[1];
+      const minutes = timecode[2];
+      const seconds = timecode[3];
+      if (!hours || !minutes || !seconds) continue;
+      out.set(
+        `${date_of_stream} ${timecode[4].toLowerCase()?.trim()}`,
+        `${video.url}?t=${hours}h${minutes}m${seconds}s`,
+      );
+    }
+  }
+  return out;
+}
+
+function prepareYoutubeUpdateRequests(
   dategame_to_youtube_url: Map<string, string>,
   current_data: Record<string, Row[]>,
 ): any[] {
@@ -134,6 +170,64 @@ function prepareUpdateRequests(
   return out;
 }
 
+function prepareVkUpdateRequests(
+  dategame_to_youtube_url: Map<string, string>,
+  current_data: Record<string, Row[]>,
+): any[] {
+  const out = [];
+  for (const date of Object.values(current_data)) {
+    for (const row of date) {
+      if (row.vk?.trim().length > 0) continue;
+      const sheetGameName = row.game?.toLowerCase()?.trim();
+      if (!sheetGameName) continue;
+      let url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName}`);
+      // TODO: consider to iterate
+      if (!url && sheetGameName.endsWith(" demo")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -5)}`);
+      }
+      if (!url && sheetGameName.endsWith(" (demo)")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -7)}`);
+      }
+      if (!url && sheetGameName.endsWith(" playtest")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -9)}`);
+      }
+      if (!url && sheetGameName.endsWith(" (playtest)")) {
+        url = dategame_to_youtube_url.get(`${row.date} ${sheetGameName.slice(0, -11)}`);
+      }
+
+      if (!url) continue;
+
+      out.push(googleSheets.updateCellRequest(
+        googleSheets.urlCell("VK", [url]),
+        ["userEnteredValue", "textFormatRuns"],
+        row.row_index,
+        6,
+      ));
+    }
+  }
+  return out;
+}
+
+export async function fillVkGames(current_data: Record<string, Row[]>): Promise<any[]> {
+  const missed_vk_dates = new Set(
+    Object.values(current_data).flat().filter((item) => item && !item.vk).map((item) => item && item.date),
+  );
+
+  const vk = new Vk(config.vk.channel);
+  const videos = await vk.getVideos();
+
+  const date_to_vk_video_id = dateToVkVideoId(videos);
+  const vk_ids_to_get_info = Array.from(missed_vk_dates)
+    .map((date) => date_to_vk_video_id.get(date))
+    .filter((ids): ids is number[] => !!ids && ids.length > 0)
+    .flat();
+
+  const vk_timecodes_urls = proccessVkVideos(videos.filter((item) => vk_ids_to_get_info.includes(item.id)));
+  const vk_requests = prepareVkUpdateRequests(vk_timecodes_urls, current_data);
+
+  return vk_requests;
+}
+
 export async function fillYoutubeGames(current_data: Record<string, Row[]>): Promise<any[]> {
   const missed_youtube_dates = new Set(
     Object.values(current_data).flat().filter((item) => item && !item.youtube).map((item) => item && item.date),
@@ -151,7 +245,7 @@ export async function fillYoutubeGames(current_data: Record<string, Row[]>): Pro
     youtube_videos.filter((item) => youtube_ids_to_get_info.includes(item.id)),
   );
 
-  const youtube_requests = prepareUpdateRequests(youtube_timecodes_urls, current_data);
+  const youtube_requests = prepareYoutubeUpdateRequests(youtube_timecodes_urls, current_data);
 
   return youtube_requests;
 }
@@ -180,18 +274,33 @@ export async function fillGamesSheet(): Promise<void> {
   const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
   const current_data = prepareCurrentData(last_50_rows);
 
-  const [youtube_result, boosty_result] = await Promise.all([
-    fillYoutubeGames(current_data),
+  // const [youtube_result, boosty_result] = await Promise.all([
+  //   fillYoutubeGames(current_data),
+  //   fillBoostyGames(current_data),
+  // ]);
+
+  // if (youtube_result.length === 0 && boosty_result.length === 0) {
+  //   logger.log("Games Sheet", "Nothing to update");
+  //   return;
+  // }
+  // logger.log("Games Sheet", "Youtube requests", youtube_result.length);
+  // logger.log("Games Sheet", "Boosty requests", boosty_result.length);
+
+  // const requests = youtube_result.concat(boosty_result);
+  // await googleSheets.batchRequest(requests);
+
+  const [vk_result, boosty_result] = await Promise.all([
+    fillVkGames(current_data),
     fillBoostyGames(current_data),
   ]);
 
-  if (youtube_result.length === 0 && boosty_result.length === 0) {
+  if (vk_result.length === 0 && boosty_result.length === 0) {
     logger.log("Games Sheet", "Nothing to update");
     return;
   }
-  logger.log("Games Sheet", "Youtube requests", youtube_result.length);
+  logger.log("Games Sheet", "Vk requests", vk_result.length);
   logger.log("Games Sheet", "Boosty requests", boosty_result.length);
 
-  const requests = youtube_result.concat(boosty_result);
+  const requests = vk_result.concat(boosty_result);
   await googleSheets.batchRequest(requests);
 }

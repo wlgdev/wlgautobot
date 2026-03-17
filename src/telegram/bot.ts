@@ -8,6 +8,7 @@ import { streamTimecodes } from "../features/timecodes.ts";
 import { shortsStats } from "../features/shorts-stat.ts";
 import { boostyBosts } from "../features/boosty-posts.ts";
 import { logger } from "../utils.ts";
+import { vk_menu, vk_vods_menu, vkRecord } from "../post/record-vk.ts";
 
 export const bot = new Bot(config.telegram.token);
 
@@ -30,8 +31,14 @@ bot.hears(/^(\/clip|клип|clip)\s*(.+){0,1}/, async (ctx) => {
 
 bot.use(yt_menu.handler());
 bot.use(vods_menu.handler());
-bot.hears(/^(\/record|запись|record|вод|vod)\s*(.+){0,1}/, async (ctx) => {
+bot.hears(/^(\/record|запись|record|вод|vod)(?:\s+(.+))?$/, async (ctx) => {
   await youtubeRecord(ctx);
+});
+
+bot.use(vk_menu.handler());
+bot.use(vk_vods_menu.handler());
+bot.hears(/^(\/recordvk|записьвк|recordvk|водвк|vodvk)(?:\s+(.+))?$/, async (ctx) => {
+  await vkRecord(ctx);
 });
 
 bot.hears(/^(\/cut|нарезка|кат|cut)\s*(.+){0,1}/, async (ctx) => {

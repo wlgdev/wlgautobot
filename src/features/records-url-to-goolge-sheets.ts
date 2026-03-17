@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-explicit-any
-import { Boosty, Twitch } from "@shevernitskiy/scraperator";
+import { Boosty, Twitch, Vk } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { GoogleSheets } from "../libs/google-sheets.ts";
 import { logger } from "../utils.ts";
@@ -13,9 +13,10 @@ type Row = {
   twitch?: string;
   youtube?: string;
   boosty?: string;
+  vk?: string;
 };
 
-type GSRow = [string, string, string, string, string];
+type GSRow = [string, string, string, string, string, string];
 
 type TwitchVod = {
   date: string;
@@ -56,6 +57,7 @@ function prepareCurrentTableData(rows: GSRow[]): Row[] {
       twitch: row.at(2),
       youtube: row.at(3),
       boosty: row.at(4),
+      vk: row.at(5),
     }))
     .filter((row) => row.date.length > 0);
 
@@ -185,7 +187,7 @@ function computeMissedYoutubeDates(rows: Row[]): Map<string, number> {
 }
 
 function convertRecordToCellsRequests(
-  items: Record<string, (YoutubeVideo | BoostyPost)[]>,
+  items: Record<string, (YoutubeVideo | BoostyPost | VkVideo)[]>,
   missedDates: Map<string, number>,
   targetColumnIndex: number,
   text: string,
@@ -233,7 +235,71 @@ export async function fillYoutubeRecords(currentTabledata: Row[]): Promise<any[]
   return requests;
 }
 
-//
+/**
+ * VK Record Flow
+ */
+
+type VkVideo = {
+  id: number;
+  title: string;
+  date: string;
+  dateTs: Date;
+  url: string;
+};
+
+async function getVkVideos(): Promise<VkVideo[]> {
+  const vk = new Vk(config.vk.channel);
+  let videos = await vk.getVideos();
+  videos = videos.filter((post) => post.title?.match(REGEX_DATE));
+
+  return videos.map((item) => {
+    const date = REGEX_DATE.exec(item.title)?.[1];
+    if (!date) throw new Error("no date");
+    return {
+      id: item.id,
+      title: item.title,
+      date: date,
+      dateTs: stringToDate(date),
+      url: item.url,
+    };
+  });
+}
+
+function computeMissedVkDates(rows: Row[]): Map<string, number> {
+  const missedDates = new Map<string, number>();
+  for (const row of rows) {
+    if (row.date.length > 0 && !row.vk) {
+      missedDates.set(row.date, row.rowIndex);
+    }
+  }
+  return missedDates;
+}
+
+export async function fillVkRecords(currentTabledata: Row[]): Promise<any[]> {
+  const missedDates = computeMissedVkDates(currentTabledata);
+  if (missedDates.size === 0) {
+    logger.log("VK Records", "No missed dates for Boosty found in the Record sheet");
+    return [];
+  } else {
+    logger.log("VK Records", `Found ${missedDates.size} missed dates`);
+  }
+
+  const vkVideos = await getVkVideos();
+  const groupByDateBoostyPosts = groupByDate(vkVideos);
+  const requests = convertRecordToCellsRequests(
+    groupByDateBoostyPosts,
+    missedDates,
+    5,
+    "VK",
+    GoogleSheets.GREY_BORDERS,
+  );
+  if (requests.length === 0) {
+    logger.log("VK Records", "No posts for missed dates found");
+    return [];
+  }
+
+  return requests;
+}
 
 /**
  * Boosty Record Flow
@@ -307,18 +373,33 @@ export async function fillRecordsSheet(): Promise<void> {
 
   const currentTabledata = await getCurrentTableData();
 
-  const [youtubeResult, boostyResult] = await Promise.all([
-    fillYoutubeRecords(currentTabledata),
+  // const [youtubeResult, boostyResult] = await Promise.all([
+  //   fillYoutubeRecords(currentTabledata),
+  //   fillBoostyRecords(currentTabledata),
+  // ]);
+
+  // if (youtubeResult.length === 0 && boostyResult.length === 0) {
+  //   logger.log("Records Sheet", "Nothing to update");
+  //   return;
+  // }
+  // logger.log("Records Sheet", "Youtube requests", youtubeResult.length);
+  // logger.log("Records Sheet", "Boosty requests", boostyResult.length);
+
+  // const requests = youtubeResult.concat(boostyResult);
+  // await googleSheets.batchRequest(requests);
+
+  const [vkResult, boostyResult] = await Promise.all([
+    fillVkRecords(currentTabledata),
     fillBoostyRecords(currentTabledata),
   ]);
 
-  if (youtubeResult.length === 0 && boostyResult.length === 0) {
+  if (vkResult.length === 0 && boostyResult.length === 0) {
     logger.log("Records Sheet", "Nothing to update");
     return;
   }
-  logger.log("Records Sheet", "Youtube requests", youtubeResult.length);
+  logger.log("Records Sheet", "VK requests", vkResult.length);
   logger.log("Records Sheet", "Boosty requests", boostyResult.length);
 
-  const requests = youtubeResult.concat(boostyResult);
+  const requests = vkResult.concat(boostyResult);
   await googleSheets.batchRequest(requests);
 }
