@@ -5,19 +5,29 @@ import { fillGamesSheet } from "./features/games-url-to-google-sheets.ts";
 import { fillRecordsSheet } from "./features/records-url-to-goolge-sheets.ts";
 import { app } from "./app.ts";
 
-if (Deno.env.get("DENO_TIMELINE") === "production") {
-  Deno.cron("shorts stats", "0 0 26 * *", async () => {
+Deno.cron("shorts stats", "0 0 26 * *", async () => {
+  if (Deno.env.get("DENO_TIMELINE") === "production") {
     await scheduleStats();
-  });
+  }
+});
 
-  Deno.cron("fill games sheet", "0 7 * * *", async () => {
+Deno.cron("fill games sheet", "0 7 * * *", async () => {
+  if (Deno.env.get("DENO_TIMELINE") === "production") {
     await fillGamesSheet();
-  });
+  }
+});
 
-  Deno.cron("fill records sheet", "10 7 * * *", async () => {
+Deno.cron("fill records sheet", "10 7 * * *", async () => {
+  if (Deno.env.get("DENO_TIMELINE") === "production") {
     await fillRecordsSheet();
-  });
-}
+  }
+});
+
+Deno.cron("test", "23 7 * * *", () => {
+  if (Deno.env.get("DENO_TIMELINE") === "production") {
+    console.log("WE HERE");
+  }
+});
 
 Deno.serve({
   port: 6969,
