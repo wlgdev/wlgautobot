@@ -93,3 +93,7 @@ app.post("/state", isAdminMiddleware, async (c) => {
   await db.set(["state"], body);
   return c.text("Ok");
 });
+
+app.get("/tl", (c) => {
+  return c.text(Deno.env.get("DENO_TIMELINE") ?? "no timeline");
+});
