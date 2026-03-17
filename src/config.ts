@@ -26,7 +26,7 @@ export function getConfig() {
 Шортс доступен на ${sources}.`;
         },
         record: (text: string, youtube_urls: string[], twitch_urls: string[], boosty_url?: string) => {
-          const boosty_link = boosty_url ? ` и <a href="${boosty_url}">Boosty</a>` : "";
+          const boosty_link = boosty_url ? ` и <a href="${boosty_url}">Boosty</a> для платных подписчиков` : "";
 
           const message = [
             youtube_urls.length === 1 ? text.replace("YouTube", `<a href="${youtube_urls[0]}">YouTube</a>`) : text,
@@ -38,12 +38,10 @@ export function getConfig() {
           }
           if (twitch_urls.length === 1) {
             message.push(
-              `\nЗапись также доступна на <a href="${
-                twitch_urls[0]
-              }">Twitch</a>${boosty_link} для платных подписчиков.`,
+              `\nЗапись также доступна на <a href="${twitch_urls[0]}">Twitch</a>${boosty_link}.`,
             );
           } else if (twitch_urls.length > 1) {
-            message.push(`\nЗапись также доступна на Twitch${boosty_link} для платных подписчиков.`);
+            message.push(`\nЗапись также доступна на Twitch${boosty_link}.`);
             message.push(
               "\n" + twitch_urls.map((url, index) => `⦁ <a href="${url}">Часть ${index + 1}</a>`).join("\n"),
             );
@@ -54,7 +52,7 @@ export function getConfig() {
           return message.join("\n");
         },
         record_vk: (text: string, vk_urls: string[], twitch_urls: string[], boosty_url?: string) => {
-          const boosty_link = boosty_url ? ` и <a href="${boosty_url}">Boosty</a>` : "";
+          const boosty_link = boosty_url ? ` и <a href="${boosty_url}">Boosty</a> для платных подписчиков` : "";
 
           const message = [
             vk_urls.length === 1 ? text.replace("VK", `<a href="${vk_urls[0]}">VK</a>`) : text,
@@ -66,12 +64,10 @@ export function getConfig() {
           }
           if (twitch_urls.length === 1) {
             message.push(
-              `\nЗапись также доступна на <a href="${
-                twitch_urls[0]
-              }">Twitch</a>${boosty_link} для платных подписчиков.`,
+              `\nЗапись также доступна на <a href="${twitch_urls[0]}">Twitch</a>${boosty_link}.`,
             );
           } else if (twitch_urls.length > 1) {
-            message.push(`\nЗапись также доступна на Twitch${boosty_link} для платных подписчиков.`);
+            message.push(`\nЗапись также доступна на Twitch${boosty_link}.`);
             message.push(
               "\n" + twitch_urls.map((url, index) => `⦁ <a href="${url}">Часть ${index + 1}</a>`).join("\n"),
             );
