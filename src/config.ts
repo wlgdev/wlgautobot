@@ -52,29 +52,48 @@ export function getConfig() {
           return message.join("\n");
         },
         record_vk: (text: string, vk_urls: string[], twitch_urls: string[], boosty_url?: string) => {
-          const boosty_link = boosty_url ? ` и <a href="${boosty_url}">Boosty</a> для платных подписчиков` : "";
+          const inlineSources: string[] = [];
 
-          const message = [
-            vk_urls.length === 1 ? text.replace("VK", `<a href="${vk_urls[0]}">VK</a>`) : text,
-          ];
+          if (vk_urls.length === 1) {
+            inlineSources.push(`<a href="${vk_urls[0]}">VK</a>`);
+          } else if (vk_urls.length > 1) {
+            inlineSources.push("VK");
+          }
+
+          if (twitch_urls.length === 1) {
+            inlineSources.push(`<a href="${twitch_urls[0]}">Twitch</a>`);
+          }
+
+          if (boosty_url) {
+            inlineSources.push(`<a href="${boosty_url}">Boosty</a> (для платных подписчиков)`);
+          }
+
+          const joinSources = (sources: string[]) => {
+            if (sources.length === 0) return "VK";
+            if (sources.length === 1) return sources[0];
+            if (sources.length === 2) return `${sources[0]} и ${sources[1]}`;
+            return `${sources.slice(0, -1).join(", ")} и ${sources[sources.length - 1]}`;
+          };
+
+          const message: string[] = [];
+
+          message.push(text.replace("VK", joinSources(inlineSources)));
+
           if (vk_urls.length > 1) {
             message.push(
               "\n" + vk_urls.map((url, index) => `⦁ <a href="${url}">Часть ${index + 1}</a>`).join("\n"),
             );
           }
-          if (twitch_urls.length === 1) {
-            message.push(
-              `\nЗапись также доступна на <a href="${twitch_urls[0]}">Twitch</a>${boosty_link}.`,
-            );
-          } else if (twitch_urls.length > 1) {
-            message.push(`\nЗапись также доступна на Twitch${boosty_link}.`);
+
+          if (twitch_urls.length > 1) {
+            message.push(`\nЗапись также доступна на Twitch:`);
             message.push(
               "\n" + twitch_urls.map((url, index) => `⦁ <a href="${url}">Часть ${index + 1}</a>`).join("\n"),
             );
-          } else if (boosty_url && twitch_urls.length === 0) {
-            message.push(`\nЗапись также доступна на <a href="${boosty_url}">Boosty</a> для платных подписчиков.`);
           }
+
           message.push("\n#запись #twitch #vk");
+
           return message.join("\n");
         },
         video_cut: (text: string, urls: [string, string][]) => {
@@ -162,7 +181,7 @@ Cгенери описание 'что мы делали на стриме' ос
  </task>
  <constraints>
  Ответь только самим текстом описания и обязательно сохрани слово VK. Начинай словами "Запись стрима, на котором мы". Не отвечай списком.
- В ответе употребляй выражение "VK канал", а не "VK сообщество".
+ В ответе не употребляй выражение "VK канал" или "VK сообщество", просто "VK".
  </constraints>
 
  <example>
@@ -175,7 +194,7 @@ Cгенери описание 'что мы делали на стриме' ос
  06:05:03 – DARK SOULS III
  </timecodes>
  <result>
- Запись стрима, на котором мы угоняли тачки и устраивали беспредел в Grand Theft Auto V Enhanced, выживали на необитаемом острове в Project Castaway, вспомнили классику в Unreal Gold, а затем отправились страдать в DARK SOULS III, доступна в нашем VK канале.
+ Запись стрима, на котором мы угоняли тачки и устраивали беспредел в Grand Theft Auto V Enhanced, выживали на необитаемом острове в Project Castaway, вспомнили классику в Unreal Gold, а затем отправились страдать в DARK SOULS III, доступна на VK.
  </result>
  </example>
 
