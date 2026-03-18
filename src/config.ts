@@ -54,14 +54,14 @@ export function getConfig() {
         record_vk: (text: string, vk_urls: string[], twitch_urls: string[], boosty_url?: string) => {
           const inlineSources: string[] = [];
 
+          if (twitch_urls.length === 1) {
+            inlineSources.push(`<a href="${twitch_urls[0]}">Twitch</a>`);
+          }
+
           if (vk_urls.length === 1) {
             inlineSources.push(`<a href="${vk_urls[0]}">VK</a>`);
           } else if (vk_urls.length > 1) {
             inlineSources.push("VK");
-          }
-
-          if (twitch_urls.length === 1) {
-            inlineSources.push(`<a href="${twitch_urls[0]}">Twitch</a>`);
           }
 
           if (boosty_url) {
