@@ -32,7 +32,8 @@ bot.hears(/^(\/clip|клип|clip)\s*(.+){0,1}/, async (ctx) => {
 bot.use(yt_menu.handler());
 bot.use(vods_menu.handler());
 bot.hears(/^(\/record|запись|record|вод|vod)(?:\s+(.+))?$/, async (ctx) => {
-  await youtubeRecord(ctx);
+  // await youtubeRecord(ctx);
+  await vkRecord(ctx);
 });
 
 bot.use(vk_menu.handler());
