@@ -64,10 +64,6 @@ export function getConfig() {
             inlineSources.push("VK");
           }
 
-          if (boosty_url) {
-            inlineSources.push(`<a href="${boosty_url}">Boosty</a> (для платных подписчиков)`);
-          }
-
           const joinSources = (sources: string[]) => {
             if (sources.length === 0) return "VK";
             if (sources.length === 1) return sources[0];
@@ -90,6 +86,10 @@ export function getConfig() {
             message.push(
               "\n" + twitch_urls.map((url, index) => `⦁ <a href="${url}">Часть ${index + 1}</a>`).join("\n"),
             );
+          }
+
+          if (boosty_url) {
+            message.push(`\nЗапись также доступна на <a href="${boosty_url}">Boosty</a> для платных подписчиков.`);
           }
 
           message.push("\n#запись #twitch #vk");
