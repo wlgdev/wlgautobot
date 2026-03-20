@@ -80,6 +80,7 @@ async function insertFirstRowRaw(date: string, game: string, url?: string, botto
             { userEnteredFormat: { borders } },
             { userEnteredFormat: { borders } },
             { userEnteredFormat: { borders } },
+            { userEnteredFormat: { borders } },
             {
               userEnteredFormat: {
                 borders: { ...borders, right: GoogleSheets.BLACK_BORDER },
