@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VK Token</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    h1 {
+      font-size: 1.25rem;
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      color: #000;
+    }
+    #vk-button-container {
+      display: flex;
+      justify-content: center;
+      min-height: 44px; /* Default VK button height to prevent layout shift */
+    }
+    .result-container {
+      display: none;
+      text-align: left;
+    }
+    pre {
+      background: #f0f2f5;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      border: 1px solid #e1e4e8;
+    }
+    .download-btn {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background-color: #0077ff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.2s;
+      width: 100%;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .download-btn:hover {
+      background-color: #005ce6;
+    }
+  </style>
+  <script nonce="csp_nonce" src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
+</head>
+<body>
+  <div class="container" id="main-container">
+    <h1 id="title">Получение токена для wlgposterbot</h1>
+    <div id="vk-button-container"></div>
+    <div class="result-container" id="result-container">
+      <pre id="token-data"></pre>
+      <button class="download-btn" id="download-btn">Скачать token.json</button>
+    </div>
+  </div>
+
+  <script nonce="csp_nonce" type="text/javascript">
+    if ("VKIDSDK" in window) {
+      const VKID = window.VKIDSDK;
+
+      VKID.Config.init({
+        app: 54504469,
+        redirectUrl: "https://wlgautobot.wlg.deno.net",
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: "wall, groups, video, photos",
+      });
+
+      const oneTap = new VKID.OneTap();
+
+      oneTap
+        .render({
+          container: document.getElementById("vk-button-container"),
+          showAlternativeLogin: true,
+        })
+        .on(VKID.WidgetEvents.ERROR, vkidOnError)
+        .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+          const code = payload.code;
+          const deviceId = payload.device_id;
+
+          VKID.Auth.exchangeCode(code, deviceId).then(vkidOnSuccess).catch(vkidOnError);
+        });
+
+      function vkidOnSuccess(data) {
+        document.getElementById("vk-button-container").style.display = "none";
+        document.getElementById("title").innerText = "Токен успешно получен";
+
+        const resultContainer = document.getElementById("result-container");
+        const tokenDataPre = document.getElementById("token-data");
+        const downloadBtn = document.getElementById("download-btn");
+
+        const jsonString = JSON.stringify(data, null, 2);
+        tokenDataPre.textContent = jsonString;
+        resultContainer.style.display = "block";
+
+        downloadBtn.onclick = () => {
+          const blob = new Blob([jsonString], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "token.json";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+      }
+
+      function vkidOnError(error) {
+        console.error("VK ID Error", error);
+        alert("Произошла ошибка при авторизации. Смотрите консоль.");
+      }
+    }
+  </script>
+</body>
+</html>

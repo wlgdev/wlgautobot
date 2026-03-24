@@ -23,6 +23,10 @@ export const app = new Hono();
 
 app.get("/", (c) => c.text("Ok"));
 
+app.get("/vk", async (c) => {
+  return c.html(await Deno.readTextFile(new URL("./vk/auth.html", import.meta.url)));
+});
+
 if (isDenoDeploy) {
   const handler = webhookCallback(bot, "std/http", { timeoutMilliseconds: 30000 });
   app.post("/telegram", (c) => {
@@ -60,15 +64,6 @@ app.get("/stream", async (c) => {
     return c.text(await getLastStreamTitle());
   } else {
     return c.json(await getLastStream());
-  }
-});
-
-app.all("/auth", (c) => {
-  const code = c.req.query("code");
-  if (code) {
-    return c.text(`OK, code ${code}`);
-  } else {
-    return c.text("Error");
   }
 });
 
