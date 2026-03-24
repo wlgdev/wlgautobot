@@ -271,7 +271,7 @@ export async function fillBoostyGames(current_data: Record<string, Row[]>): Prom
 
 export async function fillGamesSheet(): Promise<void> {
   logger.log("Games Sheet", "Filling games sheet");
-  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:F50`);
+  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_games}!A2:G50`);
   const current_data = prepareCurrentData(last_50_rows);
 
   // const [youtube_result, boosty_result] = await Promise.all([

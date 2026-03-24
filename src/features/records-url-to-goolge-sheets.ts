@@ -43,7 +43,7 @@ function groupByDate<T extends { date: string }>(items: T[]): Record<string, T[]
 const googleSheets = new GoogleSheets(config.google_sheets.spreadsheet_id, config.google_sheets.sheet_id_records);
 
 async function getCurrentTableData(): Promise<Row[]> {
-  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_records}!A2:F50`) as GSRow[];
+  const last_50_rows = await googleSheets.getCellsRange(`${config.google_sheets.sheet_name_records}!A2:G50`) as GSRow[];
 
   return prepareCurrentTableData(last_50_rows);
 }
