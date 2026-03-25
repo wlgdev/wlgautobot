@@ -68,74 +68,75 @@
         background-color: #005ce6;
       }
     </style>
-    <script nonce="csp_nonce" src="https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js"></script>
   </head>
   <body>
     <div class="container" id="main-container">
       <h1 id="title">Получение токена для wlgposterbot</h1>
       <div id="vk-button-container"></div>
       <div class="result-container" id="result-container">
-        <pre id="token-data"></pre>
+        <pre id="token-data">Получение токена...</pre>
         <button class="download-btn" id="download-btn">Скачать token.json</button>
       </div>
     </div>
 
     <script nonce="csp_nonce" type="text/javascript">
-      if ("VKIDSDK" in window) {
-        const VKID = window.VKIDSDK;
+      const appId = "{{APP_ID}}";
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get("code");
+      const redirectUri = window.location.origin + window.location.pathname;
 
-        VKID.Config.init({
-          app: 5117212,
-          redirectUrl: "https://wlgautobot.wlg.deno.net",
-          responseMode: VKID.ConfigResponseMode.Callback,
-          source: VKID.ConfigSource.LOWCODE,
-          scope: "wall, groups, video, photos",
-        });
+      const buttonContainer = document.getElementById("vk-button-container");
+      const resultContainer = document.getElementById("result-container");
+      const title = document.getElementById("title");
+      const tokenDataPre = document.getElementById("token-data");
+      const downloadBtn = document.getElementById("download-btn");
 
-        const oneTap = new VKID.OneTap();
+      if (code) {
+        // Мы вернулись с ВК с кодом, теперь меняем его на токен
+        buttonContainer.style.display = "none";
+        resultContainer.style.display = "block";
+        
+        // Очищаем URL от code параметра
+        window.history.replaceState({}, document.title, window.location.pathname);
 
-        oneTap
-          .render({
-            container: document.getElementById("vk-button-container"),
-            showAlternativeLogin: true,
+        fetch("/vk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, redirectUri })
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            title.innerText = "Токен успешно получен";
+            const jsonString = JSON.stringify(data, null, 2);
+            tokenDataPre.textContent = jsonString;
+
+            downloadBtn.onclick = () => {
+              const blob = new Blob([jsonString], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "token.json";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            };
           })
-          .on(VKID.WidgetEvents.ERROR, vkidOnError)
-          .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-            const code = payload.code;
-            const deviceId = payload.device_id;
-
-            VKID.Auth.exchangeCode(code, deviceId).then(vkidOnSuccess).catch(vkidOnError);
+          .catch((error) => {
+            console.error("VK Error", error);
+            title.innerText = "Ошибка получения токена";
+            tokenDataPre.textContent = "Произошла ошибка при обмене кода на токен. Смотрите консоль.";
+            alert("Произошла ошибка при получении токена. Смотрите консоль.");
           });
-
-        function vkidOnSuccess(data) {
-          document.getElementById("vk-button-container").style.display = "none";
-          document.getElementById("title").innerText = "Токен успешно получен";
-
-          const resultContainer = document.getElementById("result-container");
-          const tokenDataPre = document.getElementById("token-data");
-          const downloadBtn = document.getElementById("download-btn");
-
-          const jsonString = JSON.stringify(data, null, 2);
-          tokenDataPre.textContent = jsonString;
-          resultContainer.style.display = "block";
-
-          downloadBtn.onclick = () => {
-            const blob = new Blob([jsonString], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "token.json";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          };
-        }
-
-        function vkidOnError(error) {
-          console.error("VK ID Error", error);
-          alert("Произошла ошибка при авторизации. Смотрите консоль.");
-        }
+      } else {
+        // Показываем кнопку входа
+        const btn = document.createElement("button");
+        btn.innerText = "Получить токен";
+        btn.className = "download-btn";
+        btn.onclick = () => {
+          window.location.href = `https://oauth.vk.com/authorize?client_id=${appId}&display=page&redirect_uri=${encodeURIComponent(redirectUri)}&scope=offline,wall,photos,video,group,docs&response_type=code`;
+        };
+        buttonContainer.appendChild(btn);
       }
     </script>
   </body>

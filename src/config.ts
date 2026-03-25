@@ -115,6 +115,8 @@ export function getConfig() {
     vk: {
       channel: Deno.env.get("VK_CHANNEL")!,
       group: Deno.env.get("VK_GROUP")!,
+      app_id: +Deno.env.get("VK_APP_ID")!,
+      app_secret: Deno.env.get("VK_APP_SECRET")!,
     },
     rutube: {
       channel: Deno.env.get("RUTUBE_CHANNEL")!,

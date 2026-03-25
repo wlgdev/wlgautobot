@@ -24,7 +24,17 @@ export const app = new Hono();
 app.get("/", (c) => c.text("Ok"));
 
 app.get("/vk", async (c) => {
-  return c.html(await Deno.readTextFile(new URL("./vk/auth.html", import.meta.url)));
+  let html = await Deno.readTextFile(new URL("./vk/auth.html", import.meta.url));
+  html = html.replace("{{APP_ID}}", config.vk.app_id.toString());
+  return c.html(html);
+});
+
+app.post("/vk", async (c) => {
+  const { code, redirectUri } = await c.req.json();
+  const res = await fetch(
+    `https://oauth.vk.com/access_token?client_id=${config.vk.app_id}&client_secret=${config.vk.app_secret}&redirect_uri=${redirectUri}&code=${code}`
+  );
+  return c.json(await res.json());
 });
 
 if (isDenoDeploy) {
