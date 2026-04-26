@@ -12,6 +12,7 @@ import { fillGamesSheet } from "./features/games-url-to-google-sheets.ts";
 import { fillRecordsSheet } from "./features/records-url-to-goolge-sheets.ts";
 import { config } from "./config.ts";
 import { getState } from "./state.ts";
+import { scheduleStats } from "./features/shorts-stat.ts";
 
 const isAdminMiddleware = createMiddleware(async (c, next) => {
   const id = c.req.header("X-Admin-Id");
@@ -32,7 +33,7 @@ app.get("/vk", async (c) => {
 app.post("/vk", async (c) => {
   const { code, redirectUri } = await c.req.json();
   const res = await fetch(
-    `https://oauth.vk.com/access_token?client_id=${config.vk.app_id}&client_secret=${config.vk.app_secret}&redirect_uri=${redirectUri}&code=${code}`
+    `https://oauth.vk.com/access_token?client_id=${config.vk.app_id}&client_secret=${config.vk.app_secret}&redirect_uri=${redirectUri}&code=${code}`,
   );
   return c.json(await res.json());
 });
@@ -85,6 +86,11 @@ app.get("/fillRecordsSheet", isAdminMiddleware, async (c) => {
 app.get("/fillGamesSheet", isAdminMiddleware, async (c) => {
   await fillGamesSheet();
   return c.text("Ok");
+});
+
+app.get("/stats", isAdminMiddleware, async (c) => {
+  await scheduleStats();
+  return c.json("Ok");
 });
 
 app.get("/state", isAdminMiddleware, async (c) => {

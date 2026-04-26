@@ -29,6 +29,7 @@ type StatsDataEntry = {
 };
 
 const HIGHLIGHT_LIMIT = 30000;
+const GOOGLE_SHEETS_ROWS_PER_BATCH = 20;
 const highlight_format = {
   backgroundColor: {
     red: 1.0,
@@ -145,45 +146,65 @@ export async function scheduleStats(): Promise<void> {
 
 async function insertFirstRowsRaw(rows: StatsDataEntry[]): Promise<void> {
   const googleSheets = new GoogleSheets(config.short_stats.spreadsheet_id, config.short_stats.sheet_id);
+  const rowBatches = chunkRows(rows, GOOGLE_SHEETS_ROWS_PER_BATCH);
 
   await googleSheets.batchRequest([
     googleSheets.insertRowsRequest(rows.length, 1),
-    googleSheets.updateRowsRequest(
-      rows.map((row) => {
-        return {
-          values: [
-            { userEnteredValue: { stringValue: row.date } },
-            { userEnteredValue: { stringValue: row.title } },
-            { userEnteredValue: { stringValue: row.hashtags } },
-            {
-              userEnteredValue: { numberValue: row.yt_views },
-              userEnteredFormat: row.yt_views > HIGHLIGHT_LIMIT ? highlight_format : undefined,
-            },
-            { userEnteredValue: { numberValue: row.yt_likes } },
-            { userEnteredValue: { numberValue: row.yt_comments } },
-            { userEnteredValue: { numberValue: row.yt_favorites } },
-            {
-              userEnteredValue: { numberValue: row.vk_views },
-              userEnteredFormat: row.vk_views > HIGHLIGHT_LIMIT ? highlight_format : undefined,
-            },
-            { userEnteredValue: { numberValue: row.vk_likes } },
-            { userEnteredValue: { numberValue: row.vk_comments } },
-            { userEnteredValue: { numberValue: row.vk_reposts } },
-            {
-              userEnteredValue: { numberValue: row.tt_views },
-              userEnteredFormat: row.tt_views > HIGHLIGHT_LIMIT ? highlight_format : undefined,
-            },
-            { userEnteredValue: { numberValue: row.tt_likes } },
-            { userEnteredValue: { numberValue: row.tt_comments } },
-            { userEnteredValue: { numberValue: row.tt_reposts } },
-            googleSheets.urlCell(row.yt_url ?? "", [row.yt_url ?? ""]),
-            googleSheets.urlCell(row.vk_url ?? "", [row.vk_url ?? ""]),
-            googleSheets.urlCell(row.tt_url ?? "", [row.tt_url ?? ""]),
-          ],
-        };
-      }),
-      ["userEnteredValue", "userEnteredFormat", "textFormatRuns"],
-      1,
-    ),
   ]);
+
+  let startIndex = 1;
+  for (const batch of rowBatches) {
+    await googleSheets.batchRequest([
+      googleSheets.updateRowsRequest(
+        batch.map((row) => mapStatsRowToGoogleRow(row, googleSheets)),
+        ["userEnteredValue", "userEnteredFormat", "textFormatRuns"],
+        startIndex,
+      ),
+    ]);
+    startIndex += batch.length;
+  }
+}
+
+function mapStatsRowToGoogleRow(row: StatsDataEntry, googleSheets: GoogleSheets) {
+  return {
+    values: [
+      { userEnteredValue: { stringValue: row.date } },
+      { userEnteredValue: { stringValue: row.title } },
+      { userEnteredValue: { stringValue: row.hashtags } },
+      {
+        userEnteredValue: { numberValue: row.yt_views },
+        userEnteredFormat: row.yt_views > HIGHLIGHT_LIMIT ? highlight_format : undefined,
+      },
+      { userEnteredValue: { numberValue: row.yt_likes } },
+      { userEnteredValue: { numberValue: row.yt_comments } },
+      { userEnteredValue: { numberValue: row.yt_favorites } },
+      {
+        userEnteredValue: { numberValue: row.vk_views },
+        userEnteredFormat: row.vk_views > HIGHLIGHT_LIMIT ? highlight_format : undefined,
+      },
+      { userEnteredValue: { numberValue: row.vk_likes } },
+      { userEnteredValue: { numberValue: row.vk_comments } },
+      { userEnteredValue: { numberValue: row.vk_reposts } },
+      {
+        userEnteredValue: { numberValue: row.tt_views },
+        userEnteredFormat: row.tt_views > HIGHLIGHT_LIMIT ? highlight_format : undefined,
+      },
+      { userEnteredValue: { numberValue: row.tt_likes } },
+      { userEnteredValue: { numberValue: row.tt_comments } },
+      { userEnteredValue: { numberValue: row.tt_reposts } },
+      googleSheets.urlCell(row.yt_url ?? "", [row.yt_url ?? ""]),
+      googleSheets.urlCell(row.vk_url ?? "", [row.vk_url ?? ""]),
+      googleSheets.urlCell(row.tt_url ?? "", [row.tt_url ?? ""]),
+    ],
+  };
+}
+
+function chunkRows<T>(rows: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < rows.length; index += chunkSize) {
+    chunks.push(rows.slice(index, index + chunkSize));
+  }
+
+  return chunks;
 }

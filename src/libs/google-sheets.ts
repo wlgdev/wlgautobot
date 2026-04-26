@@ -34,27 +34,38 @@ export class GoogleSheets {
   constructor(private spreadsheetId: string, private sheetId: number) {}
 
   async batchRequest(requests: any[]): Promise<void> {
+    const body = JSON.stringify({
+      requests: requests,
+    });
+
     const res = await client.request({
       url: `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}:batchUpdate`,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        requests: requests,
-      }),
+      body,
       retry: true,
       retryConfig: {
         retryDelay: 1000,
         retryDelayMultiplier: 2,
         noResponseRetries: 5,
+        retry: 3,
+        httpMethodsToRetry: ["GET", "HEAD", "PUT", "OPTIONS", "DELETE", "POST"],
+        statusCodesToRetry: [[100, 199], [408, 408], [429, 429], [500, 599]],
       },
     });
 
     if (res.status !== 200) {
       logger.error("Google Sheets", "Error inserting row", res.status, res.data);
     } else {
-      logger.log("Google Sheets", "inserted requests", requests.length);
+      logger.log(
+        "Google Sheets",
+        "inserted requests",
+        requests.length,
+        "payload bytes",
+        new TextEncoder().encode(body).length,
+      );
     }
   }
 
