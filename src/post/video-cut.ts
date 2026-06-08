@@ -1,7 +1,7 @@
 import { Dzen, type DzenVideoInfo, Rutube, type RutubeVideoInfo, Vk } from "@shevernitskiy/scraperator";
 import { config } from "../config.ts";
 import { Context } from "@grammyjs/grammy";
-import { VkVideoInfo } from "@shevernitskiy/scraperator";
+import { VkVideoInfo, Youtube } from "@shevernitskiy/scraperator";
 import { YoutubeApi, type YoutubeVideoInfo } from "../libs/youtube-api.ts";
 import { logger } from "../utils.ts";
 import { Gemini, llmFallback } from "@shevernitskiy/llm";
@@ -78,13 +78,18 @@ async function createPost(
 }
 
 async function getYoutubeVideos(search?: string): Promise<YoutubeVideoInfo[]> {
-  const youtube = new YoutubeApi(config.youtube.apikey);
-  const lastVideos = await youtube.getPlaylistItems(config.youtube.upload_playlist_id, 50);
-  if (lastVideos.length === 0) {
+  const youtube = new Youtube("@welovegames", {
+    proxy: config.proxy.cloudflare,
+  });
+  const lastVideos = await youtube.getVideos();
+
+  const youtubeApi = new YoutubeApi(config.youtube.apikey);
+  // const lastVideos = await youtube.getPlaylistItems(config.youtube.upload_playlist_id, 50);
+  if (lastVideos.items.length === 0) {
     throw new Error("не удалось получить список видео youtube");
   }
 
-  let videos = await youtube.getVideos(lastVideos.map((item) => item.id));
+  let videos = await youtubeApi.getVideos(lastVideos.items.map((item) => item.id));
   videos = videos.filter((item) => item.duration > 200);
   const result = search ? videos.filter((item) => item.title.includes(search)) : videos;
   if (result.length === 0) {
